@@ -1,6 +1,6 @@
 # Symposium
 
-AI-generated Platonic dialogues you can participate in. Plus a web interface.
+AI-generated Platonic dialogues you can participate in.
 
 ## Concept
 
@@ -8,7 +8,16 @@ Symposium simulates philosophical dialogues between historical characters using 
 
 The key mechanic is interjection: you can insert yourself into the conversation as "The Stranger" at any point. The characters respond to your actual argument and the dialogue continues from there, going wherever the philosophical thread leads.
 
-A web interface provides a reading view for stepping through and interacting with dialogues.
+## Current State
+
+Corpus and character prompts are in place. The dialogue engine is not yet built — next steps are an orchestration spec, seed dialogue, then a CLI engine (Python script). A web reading interface comes later.
+
+## Repo Structure
+
+```
+corpus/     25 Platonic dialogues, full text (Jowett 3rd ed., 1892)
+prompts/    Character system prompts (Socrates, Thrasymachus, Polemarchus, Cephalus)
+```
 
 ## Corpus
 
