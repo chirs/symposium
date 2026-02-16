@@ -1,0 +1,115 @@
+# Symposium Project Brief
+## Conversation with Claude.ai — 2026.02.15
+
+**Claude:** ...in fact you can interact with in the browser (set a topic, watch agents debate, maybe inject your own position), or as a CLI tool meant to run in Claude Code itself where the output is a generated dialogue transcript?
+
+What I'd set aside for now: Multi-model orchestration (calling different LLMs for different characters), persistent memory between sessions, fine-grained personality tuning. These are interesting but secondary to getting the dialogue dynamics right.
+
+Let me know which direction — interactive browser app vs. CLI/transcript generator — and whether you have a particular philosophical structure in mind (pure Socratic elenchus, symposium-style where multiple people give speeches, etc.), or if you want me to make that call.
+
+**Chris:** I just wanted to talk about the concept. The appeal to me is the simplicity of the design when combined with claude code (text file manipulation), the idea that the code is almost only text and instructions, and the idea of being able to interject yourself into these famous conversations in a realish way.
+
+**Claude:** Yeah, that's a clean insight. The thing that makes this work isn't sophisticated orchestration — it's that Claude Code already operates on text files, and a Platonic dialogue is a text file. The "engine" is almost nothing: append to file, read file, append again. The intelligence is entirely in the prompts.
+
+So the architecture is something like: a text file that accumulates the dialogue, a system prompt per character that defines their philosophical position and conversational style, and a loop that passes the growing transcript to each character in turn. Claude Code's native mode of operation — read file, think, write to file — is the simulator. There's barely any code to write.
+
+What makes that interesting rather than trivial is the thing you're pointing at with "interject yourself." The dialogue isn't a performance you watch. The transcript is just a text file, so you can open it, add your own line anywhere, and the next character picks up from the modified state. You're not interacting through a UI abstraction — you're editing the same artifact the agents are editing. There's no ontological distinction between your contributions and theirs. You just write in the file.
+
+That's actually closer to how the original dialogues worked than most simulations get. Plato wasn't recording conversations — he was writing himself into philosophical positions, putting words in Socrates' mouth, constructing the interplay. The person running this simulator is doing the same thing: you're Plato, not a spectator.
+
+The "realish" quality comes from the fact that if the character prompts are good — if Thrasymachus actually argues like Thrasymachus, if Socrates actually does elenchus rather than just being generically wise — then when you drop your line in, the responses you get back are structurally responsive to your actual argument. You're not role-playing at a simulation. You're making a move and the dialogue reorganizes around it.
+
+The risk is that LLM characters tend to converge. Socrates and Thrasymachus both want to be helpful and agreeable, which is the opposite of what makes the Republic interesting. The prompt engineering for the characters is where all the real work lives — getting genuine philosophical friction rather than polite exchange.
+
+**Chris:** So it would look like this. A web interface that looks like a dialogue. You can step through it or jump to a specific point. And there's a text bar at the bottom, where if you say something the text diverges but you can still skip through newly generated text. The audience is my friend Will, a political philosophy professor at U Cincinnati.
+
+**Claude:** Good, that clarifies a lot. The audience being a political philosophy professor means the characters need to actually do philosophy, not perform it. Will would immediately notice if Thrasymachus capitulates too easily or if Socrates skips a step in the elenchus.
+
+Here's what I think this looks like:
+
+The interface is basically a reading view — a scrolling dialogue with speaker labels, styled like a script or a clean text. Not chat bubbles. It should feel like reading a text, because it is a text. Navigation lets you step forward/backward through exchanges or jump to a point in the dialogue.
+
+The text bar at the bottom is the key interaction. When you type something, it gets inserted at your current position in the dialogue as a new interlocutor — you're "the stranger" or whatever — and everything after that point gets regenerated. The original path is still accessible (you can back out of your divergence), so you get a branching structure, but the UI keeps it simple: you're always reading one linear path, you just have the ability to explore forks.
+
+The generation happens exchange-by-exchange. When you advance past the last generated line, the next character responds based on the full dialogue up to that point. So "stepping through" and "generating" are the same action — you're just turning pages, and the pages get written as you reach them.
+
+For the initial version, starting with a specific dialogue makes sense — Republic Book I is the obvious candidate given Will's field. The character prompts are pre-loaded, the opening moves are established, and the philosophical terrain is well-defined enough that divergences are interesting rather than chaotic.
+
+Want me to build this? I'd do it as a React artifact with the Anthropic API generating each exchange. The main design decisions I'd make: clean typography (no UI chrome competing with the text), speaker names in the margin or as minimal labels, and the branching kept implicit — just a "return to original" option rather than a visible tree.
+
+**Chris:** No, I'm going to do this in Claude Code for obvious reasons. We are just creating the initial context here.
+
+**Claude:** Right, of course. The whole point is that Claude Code already is this — text file manipulation with intelligence. Building a React app would be adding abstraction where none is needed.
+
+So what you're actually creating here is: a set of character system prompts, a seed dialogue (or just the opening lines of Republic Book I), instructions for the orchestration loop, and instructions for how your interjections get handled. That's it. The "web interface" isn't a web interface — it's Claude Code's terminal output, or maybe it just generates a markdown file you read.
+
+What we're doing right now is figuring out what goes in those instruction files. The things that matter:
+
+**Character fidelity.** Each speaker needs a prompt that captures not just their position but their argumentative style. Thrasymachus interrupts, gets angry, argues from examples of power. Socrates asks questions he already knows the answer to, builds traps through apparent agreement, uses analogies relentlessly. Polemarchus inherits his father's position and defends it with more loyalty than rigor. These behavioral patterns are what make it feel real when you interject — the response you get back should be recognizably that person reacting to you.
+
+**The interjection mechanic.** When you add a line, the instruction needs to specify: the other characters treat you as present, they respond to your actual argument (not just acknowledge you spoke), and the dialogue can now go somewhere the original didn't. The key instruction is probably something like "the dialogue continues from this point as though it had always included this exchange — do not comment on the divergence, just follow the philosophical thread wherever it now leads."
+
+**What not to over-specify.** The dialogue content itself. If the prompts are right and the seed is right, the actual exchanges should emerge. Over-scripting kills the thing that makes it interesting.
+
+**Chris:** What dialogue do you want to start with?
+
+**Claude:** *(no response recorded before next message)*
+
+**Chris:** Oh by the way the project is called Symposium. I'm going to feed this conversation to Claude Code and tell it to use your advice to start building out the website. Create that instruction but be conservative — we can iterate immediately.
+
+**Claude:** Here's the instruction for Claude Code:
+
+---
+
+### Project: Symposium
+
+Build a web interface for stepping through AI-generated Platonic dialogues with the ability to interject as a participant.
+
+**What it is:** A reading view of a philosophical dialogue. Clean typography, minimal UI. Looks like reading a script, not using a chat app. Speaker names as labels, dialogue as text. No chat bubbles.
+
+**Core mechanics:**
+
+- A dialogue is a linear sequence of exchanges, each with a speaker and their text.
+- A "step forward" button advances one exchange. If the next exchange doesn't exist yet, it gets generated via the Anthropic API — the next character in the conversation responds based on the full dialogue so far.
+- A text input at the bottom lets the user type a line. This inserts them as "The Stranger" at the current point. The dialogue after that point is discarded and regenerated from the new branch as the user steps forward.
+- A "return to original" option restores the pre-interjection path.
+
+**First dialogue:** Republic Book I. Start with Socrates, Thrasymachus, and Polemarchus. Seed it with the opening — Socrates and Polemarchus discussing what justice is — and let generation take over from there. Create a character system prompt for each speaker that captures their argumentative style, not just their positions. Thrasymachus is aggressive and argues from power. Socrates builds traps through questions. Polemarchus is earnest but outmatched.
+
+**Technical decisions:**
+
+- React app, single page
+- Anthropic API for generation (claude-sonnet-4-5-20250929)
+- Store dialogue state in memory, no persistence needed yet
+- Each generation call sends the full dialogue history plus the current speaker's system prompt
+- Clean serif typography, generous whitespace, the text is the interface
+
+**What not to build yet:** branching tree visualization, multiple dialogue selections, persistence, export. Keep it minimal — we'll iterate.
+
+---
+
+**Chris:** Don't build the web interface yet. Prepare a plan to build the web interface among other prep/planning work.
+
+**Claude:** Good call. Updated:
+
+### Project: Symposium
+
+Prepare a project plan and foundational materials for a web interface that lets users step through AI-generated Platonic dialogues and interject as a participant.
+
+**What to produce:**
+
+1. **Project plan.** A markdown doc outlining the architecture, components, and build sequence. Keep it short — structure, not essay. Include what we're building first, what we're deferring, and the technical stack.
+2. **Character prompts.** System prompts for Socrates, Thrasymachus, and Polemarchus for Republic Book I. These should capture argumentative style and behavior, not just philosophical positions. The quality of these prompts is where the project succeeds or fails — spend the effort here.
+3. **Orchestration spec.** A short doc describing how dialogue generation works: turn order, how the full transcript gets passed as context, how interjections from "The Stranger" get handled, how branching works at the data level.
+4. **Seed dialogue.** The opening few exchanges of Republic Book I to bootstrap the conversation. Just enough to establish the scene and the question — not a full recreation.
+
+**Design principles from this conversation:**
+
+- The interface should feel like reading a text, not using a chat app. Clean serif typography, speaker labels, minimal chrome.
+- The text bar at the bottom inserts the user as "The Stranger." Characters respond to the user's actual argument without commenting on the divergence.
+- Stepping forward and generating are the same action — advancing past the last exchange triggers generation.
+- Start conservative. No persistence, no branching visualization, no dialogue selection. One dialogue, one path at a time with the ability to revert.
+
+**Technical stack:** React, Anthropic API (claude-sonnet-4-5-20250929), in-memory state only.
+
+**Audience context:** The target user is a political philosophy professor. Character fidelity and philosophical rigor matter more than features.
