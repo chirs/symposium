@@ -25,6 +25,10 @@ A web interface provides a reading view for stepping through and interacting wit
 - Dialogue state in memory — no persistence yet
 - Clean serif typography, generous whitespace, the text is the interface
 
+## Corpus
+
+`corpus/` contains the full text of 25 Platonic dialogues (Jowett 3rd edition, 1892). One file per dialogue, plain text. OCR-extracted — minor artifacts but readable.
+
 ## What We're Deferring
 
 - Persistence / save/load

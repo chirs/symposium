@@ -10,16 +10,16 @@ The key mechanic is interjection: you can insert yourself into the conversation 
 
 A web interface provides a reading view for stepping through and interacting with dialogues.
 
-## Dialogues
+## Corpus
 
-The full Platonic corpus:
+25 dialogues in `corpus/`, full text from the Jowett translation (3rd edition, 1892):
 
-**Early:** Apology, Charmides, Crito, Euthydemus, Euthyphro, Gorgias, Hippias Major, Hippias Minor, Ion, Laches, Lysis, Menexenus, Meno, Protagoras
+**Early:** Apology, Charmides, Crito, Euthydemus, Euthyphro, Gorgias, Ion, Laches, Lysis, Meno, Protagoras
 **Middle:** Cratylus, Phaedo, Phaedrus, Republic, Symposium, Theaetetus, Parmenides
 **Late:** Critias, Laws, Philebus, Sophist, Statesman, Timaeus
-**Disputed:** Alcibiades I, Alcibiades II, Clitophon, Epinomis, Hipparchus, Minos, Rival Lovers, Theages
+**Other:** Seventh Letter
 
-Starting with Republic Book I.
+Source text is OCR-extracted; some minor artifacts remain.
 
 ## Audience
 
