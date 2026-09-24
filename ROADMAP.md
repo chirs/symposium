@@ -12,7 +12,7 @@ Open work only; completed items are removed as they land (see git history).
 
 ## Dialogues
 
-- [ ] Prompts, script, and seed for a second dialogue (Symposium or Gorgias)
+- [ ] Read each new dialogue's generated output for voice and tighten the prompts (only Republic I has been run live)
 
 ## Reading view
 
@@ -23,7 +23,6 @@ Open work only; completed items are removed as they land (see git history).
 
 - Persistence beyond the working file: the text file is the state
 - Branching tree visualization: one path at a time, with revert, is the point
-- Dialogue selection UI: `--dialogue NAME` on the command line is enough for now
 - Export: the dialogue is already a text file
 - Multi-model orchestration: get one model's characters right first
 - Personality tuning UI: edit `prompts/*.md`

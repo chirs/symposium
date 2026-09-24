@@ -15,22 +15,41 @@ The dialogue is a plain text file. Edit it by hand if you like; the engine re-re
 ```
 uv venv && uv pip install -e ".[dev]"
 export ANTHROPIC_API_KEY=...
-.venv/bin/symposium new republic-1                      # -> dialogues/republic-1/run.md
-.venv/bin/symposium run dialogues/republic-1/run.md     # step through in the terminal
-.venv/bin/symposium serve                               # or read it at http://127.0.0.1:8000
+.venv/bin/symposium serve                               # pick a dialogue at http://127.0.0.1:8000
 ```
+
+or in the terminal:
+
+```
+.venv/bin/symposium new gorgias                         # -> dialogues/gorgias/run.md
+.venv/bin/symposium run dialogues/gorgias/run.md        # Enter steps or generates, typed text interjects
+```
+
+## Dialogues
+
+| Name | Speakers | Where it starts |
+| --- | --- | --- |
+| `republic-1` | Socrates, Cephalus, Polemarchus, Thrasymachus | Cephalus on the blessing of wealth; the question of justice |
+| `euthyphro` | Socrates, Euthyphro | The Porch of the King Archon; Euthyphro's first definition of piety |
+| `crito` | Socrates, Crito | The prison before dawn; the ship from Delos; Crito's first plea |
+| `gorgias` | Socrates, Gorgias, Polus, Callicles | "What is your art?" through "With discourse." |
+| `symposium` | Phaedrus, Pausanias, Eryximachus, Aristophanes, Agathon, Socrates, Alcibiades | Eryximachus proposes speeches in praise of Love |
+
+Each lives in `dialogues/<name>/` as `script.json` (title, setting, scene, turn order), `seed.md` (opening exchanges from the Jowett text, narration removed), and `prompts/<speaker>.md` (a character profile above `# System Prompt`, the prompt itself below). Socrates has a different prompt in each, because he argues differently in each.
 
 ## Commands
 
 | Command | What it does |
 | --- | --- |
-| `symposium new NAME [OUT]` | copy the seed to a working file |
+| `symposium serve` | browser reading view: choose a dialogue, step, interject, revert, start over |
+| `symposium new NAME [OUT]` | copy a dialogue's seed to a working file |
 | `symposium show FILE` | print the dialogue |
 | `symposium next FILE [-n K] [--speaker X]` | generate the next exchange(s) |
 | `symposium interject FILE "text" [--at N]` | speak as The Stranger after exchange N; discard the rest |
 | `symposium revert FILE` | return to the pre-interjection path |
 | `symposium run FILE` | interactive: Enter steps or generates, typed text interjects |
-| `symposium serve [FILE]` | browser reading view with the same controls |
+
+The web view and the CLI work on the same files: `dialogues/<name>/run.md`, created from the seed on first use.
 
 Environment: `ANTHROPIC_API_KEY`; `SYMPOSIUM_MODEL` (default `claude-opus-5`); `SYMPOSIUM_EFFORT` (`low` to `max`, optional).
 
@@ -40,8 +59,8 @@ How generation, turn order, and branching work: [docs/orchestration.md](docs/orc
 
 ```
 symposium/      engine: dialogue file model, scripted turn order, generation, CLI, server
-prompts/        shared orchestration rules and character prompts (Socrates, Thrasymachus, Polemarchus, Cephalus)
-dialogues/      one directory per dialogue: script.json (turn order) and seed.md (opening exchanges)
+dialogues/      one directory per dialogue: script.json, seed.md, prompts/
+prompts/        orchestration.md, the rules shared by every character
 web/            the reading view, one static page
 docs/           orchestration spec
 corpus/         25 Platonic dialogues, full text (Jowett 3rd ed., 1892)
