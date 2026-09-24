@@ -8,6 +8,8 @@ from symposium import cli
 from symposium.dialogue import Dialogue
 from symposium.script import DIALOGUES
 
+REPUBLIC_LEN = len(Dialogue.parse((DIALOGUES / "republic-1" / "seed.md").read_text()).exchanges)
+
 
 @pytest.fixture
 def run_file(tmp_path: Path) -> Path:
@@ -37,9 +39,9 @@ def test_next_follows_script_and_saves(run_file, stub_generate, capsys):
     cli.main(["new", "republic-1", str(run_file)])
     cli.main(["next", str(run_file), "-n", "2"])
     d = Dialogue.load(run_file)
-    assert [e.speaker for e in d.exchanges[-2:]] == ["SOCRATES", "POLEMARCHUS"]
+    assert [e.speaker for e in d.exchanges[-2:]] == ["THRASYMACHUS", "SOCRATES"]
     assert d.exchanges[-1].text == "So it seems."
-    assert "SOCRATES\nSo it seems." in capsys.readouterr().out
+    assert "THRASYMACHUS\nSo it seems." in capsys.readouterr().out
 
 
 def test_next_speaker_override(run_file, stub_generate):
@@ -51,19 +53,19 @@ def test_next_speaker_override(run_file, stub_generate):
 def test_interject_then_next_then_revert(run_file, stub_generate, capsys):
     cli.main(["new", "republic-1", str(run_file)])
     cli.main(["interject", str(run_file), "But what is a debt?", "--at", "3"])
-    assert "8 discarded" in capsys.readouterr().out
+    assert f"{REPUBLIC_LEN - 3} discarded" in capsys.readouterr().out
     d = Dialogue.load(run_file)
     assert len(d.exchanges) == 4 and d.exchanges[-1].is_stranger
     assert (run_file.parent / "run.original.md").exists()
 
     cli.main(["next", str(run_file)])
-    assert Dialogue.load(run_file).exchanges[-1].speaker == "CEPHALUS"
+    assert Dialogue.load(run_file).exchanges[-1].speaker == "POLEMARCHUS"
 
     cli.main(["show", str(run_file)])
     assert "diverged" in capsys.readouterr().out
 
     cli.main(["revert", str(run_file)])
-    assert len(Dialogue.load(run_file).exchanges) == 11
+    assert len(Dialogue.load(run_file).exchanges) == REPUBLIC_LEN
     assert not (run_file.parent / "run.original.md").exists()
     with pytest.raises(SystemExit):
         cli.main(["revert", str(run_file)])
@@ -86,7 +88,7 @@ def test_next_without_script_exits(tmp_path, stub_generate):
     with pytest.raises(SystemExit):
         cli.main(["next", str(f)])
     cli.main(["next", str(f), "--dialogue", "republic-1"])
-    assert Dialogue.load(f).exchanges[-1].speaker == "CEPHALUS"
+    assert Dialogue.load(f).exchanges[-1].speaker == "POLEMARCHUS"
 
 
 def test_script_json_is_valid():

@@ -53,10 +53,14 @@ def test_republic_seed_matches_script():
     assert script.name == "republic-1"
     assert script.dir == DIALOGUES / "republic-1"
     seed = Dialogue.parse((script.dir / "seed.md").read_text())
-    assert script.phase_at(script.phases[0].length - 1).name == "Cephalus"
-    assert script.phase_at(seed.turn_count).name == "Polemarchus"
-    assert seed.exchanges[script.phases[0].length - 1].key == "cephalus"
-    assert script.next_speaker(seed) == "socrates"
+    scripted = [e for e in seed.exchanges if e.is_scripted]
+    assert len(scripted) > 400
+    starts = [0]
+    for p in script.phases[:-1]:
+        starts.append(starts[-1] + p.length)
+    assert [scripted[i].speaker for i in starts] == ["SERVANT", "CEPHALUS", "SOCRATES", "THRASYMACHUS"]
+    assert scripted[starts[3]].text.startswith("What folly")
+    assert script.next_speaker(seed) == "thrasymachus"
 
 
 @pytest.mark.parametrize("script", Script.discover(), ids=lambda s: s.name)

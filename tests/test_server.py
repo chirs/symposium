@@ -14,6 +14,9 @@ TINY_SCRIPT = """{"title": "Tiny", "setting": "A porch", "scene": "Two men talk.
 """
 
 
+REPUBLIC_LEN = len(Dialogue.parse((DIALOGUES / "republic-1" / "seed.md").read_text()).exchanges)
+
+
 def fake_generate(dialogue, speaker, script):
     return f"({speaker} speaks in {script.name})"
 
@@ -53,7 +56,7 @@ def test_state_creates_run_file(client, root):
 
 def test_next_follows_script_and_accepts_override(client):
     data = client.post("/api/dialogues/republic-1/next", json={}).json()
-    assert data["exchanges"][-1] == {"speaker": "SOCRATES", "text": "(socrates speaks in republic-1)"}
+    assert data["exchanges"][-1] == {"speaker": "THRASYMACHUS", "text": "(thrasymachus speaks in republic-1)"}
     data = client.post("/api/dialogues/republic-1/next", json={"speaker": "thrasymachus"}).json()
     assert data["exchanges"][-1]["speaker"] == "THRASYMACHUS"
     assert data["next_speaker"] == "SOCRATES"
@@ -62,7 +65,7 @@ def test_next_follows_script_and_accepts_override(client):
 def test_dialogues_are_independent(client, root):
     client.post("/api/dialogues/tiny/next", json={})
     assert len(client.get("/api/dialogues/tiny").json()["exchanges"]) == 2
-    assert len(client.get("/api/dialogues/republic-1").json()["exchanges"]) == 11
+    assert len(client.get("/api/dialogues/republic-1").json()["exchanges"]) == REPUBLIC_LEN
     assert Dialogue.load(root / "tiny" / "run.md").exchanges[-1].speaker == "BETA"
 
 
@@ -70,18 +73,18 @@ def test_interject_revert_and_reset(client, root):
     base = "/api/dialogues/republic-1"
     data = client.post(f"{base}/interject", json={"text": "What is a debt?", "at": 3}).json()
     assert len(data["exchanges"]) == 4 and data["exchanges"][-1]["speaker"] == "THE STRANGER"
-    assert data["has_original"] is True and data["next_speaker"] == "CEPHALUS"
+    assert data["has_original"] is True and data["next_speaker"] == "POLEMARCHUS"
     assert (root / "republic-1" / "run.original.md").exists()
     data = client.post(f"{base}/revert").json()
-    assert len(data["exchanges"]) == 11 and data["has_original"] is False
+    assert len(data["exchanges"]) == REPUBLIC_LEN and data["has_original"] is False
     assert client.post(f"{base}/revert").status_code == 400
     assert client.post(f"{base}/interject", json={"text": "  "}).status_code == 400
-    assert client.post(f"{base}/interject", json={"text": "x", "at": 99}).status_code == 400
+    assert client.post(f"{base}/interject", json={"text": "x", "at": 99999}).status_code == 400
 
     client.post(f"{base}/interject", json={"text": "Again.", "at": 2})
     client.post(f"{base}/next", json={})
     data = client.post(f"{base}/reset").json()
-    assert len(data["exchanges"]) == 11 and data["has_original"] is False
+    assert len(data["exchanges"]) == REPUBLIC_LEN and data["has_original"] is False
     assert not (root / "republic-1" / "run.original.md").exists()
     assert (root / "republic-1" / "run.md").read_text() == (DIALOGUES / "republic-1" / "seed.md").read_text()
 
