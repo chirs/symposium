@@ -80,11 +80,18 @@ def generate(
 ) -> str:
     """Return the next speech for `speaker`. Streams text to `on_text` as it arrives."""
     client = client or anthropic.Anthropic()
-    with client.messages.stream(**request_params(dialogue, speaker)) as stream:
-        for text in stream.text_stream:
-            if on_text:
-                on_text(text)
-        message = stream.get_final_message()
+    try:
+        with client.messages.stream(**request_params(dialogue, speaker)) as stream:
+            for text in stream.text_stream:
+                if on_text:
+                    on_text(text)
+            message = stream.get_final_message()
+    except TypeError as err:  # the SDK's "could not resolve authentication method"
+        if "authentication" not in str(err):
+            raise
+        raise GenerationError("no API credentials: set ANTHROPIC_API_KEY") from err
+    except anthropic.APIError as err:
+        raise GenerationError(f"API error: {err}") from err
     if message.stop_reason != "end_turn":
         raise GenerationError(f"generation stopped early: {message.stop_reason}")
     return clean("".join(b.text for b in message.content if b.type == "text"), speaker)

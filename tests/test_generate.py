@@ -55,3 +55,14 @@ def test_model_and_effort_from_env(monkeypatch):
     params = g.request_params(Dialogue.parse(SEED), "socrates")
     assert params["model"] == "claude-sonnet-5"
     assert params["output_config"] == {"effort": "low"}
+
+
+def test_missing_credentials_is_a_generation_error():
+    class NoAuth:
+        class messages:
+            @staticmethod
+            def stream(**kwargs):
+                raise TypeError("Could not resolve authentication method.")
+
+    with pytest.raises(g.GenerationError, match="ANTHROPIC_API_KEY"):
+        g.generate(Dialogue.parse(SEED), "socrates", client=NoAuth())
