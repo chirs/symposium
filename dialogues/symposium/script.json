@@ -1,0 +1,16 @@
+{
+  "title": "Symposium",
+  "setting": "The house of Agathon, Athens, the night after his victory",
+  "scene": "The day after the young tragic poet Agathon won the prize at the Lenaea, his friends have gathered at his house to celebrate. Everyone drank hard last night, so it has been agreed that tonight the drinking is voluntary, the flute-girl has been sent away, and there will be talk instead. Reclining, from the left: Phaedrus, Pausanias (Agathon's lover), Aristophanes the comic poet, Eryximachus the physician, Agathon the host, and Socrates, who arrived late after standing lost in thought in a neighbour's porch; Aristodemus, who adores Socrates, sits silent and remembers everything. Eryximachus has proposed that each in turn, from left to right, make a speech in praise of Love, and Socrates has seconded it. Later in the night Alcibiades will arrive drunk, crowned with ivy and violets, and change the subject to Socrates. Aristophanes, taken with the hiccups, has asked Eryximachus to speak in his place, and will speak once he is cured.",
+  "phases": [
+    {"name": "Phaedrus", "speakers": ["phaedrus"], "length": 1},
+    {"name": "Pausanias", "speakers": ["pausanias"], "length": 1},
+    {"name": "Eryximachus", "speakers": ["eryximachus"], "length": 1},
+    {"name": "Aristophanes", "speakers": ["aristophanes"], "length": 1},
+    {"name": "Agathon", "speakers": ["agathon"], "length": 1},
+    {"name": "Socrates questions Agathon", "speakers": ["socrates", "agathon"], "length": 8},
+    {"name": "Diotima", "speakers": ["socrates"], "length": 1},
+    {"name": "Alcibiades", "speakers": ["alcibiades"], "length": 1},
+    {"name": "After", "speakers": ["socrates", "alcibiades"], "length": 60}
+  ]
+}
