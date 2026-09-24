@@ -11,6 +11,7 @@ from symposium.dialogue import Dialogue
 ROOT = Path(__file__).resolve().parent.parent
 DIALOGUES = ROOT / "dialogues"
 SHARED = ROOT / "prompts" / "characters"  # prompts for characters who recur across dialogues
+COLLECTIONS = ("Plato", "New Testament")  # landing-page order; unknown collections come last
 
 
 @dataclass
@@ -62,7 +63,12 @@ class Script:
 
     @classmethod
     def discover(cls, root: Path = DIALOGUES) -> list[Script]:
-        return [cls.load(p) for p in sorted(root.glob("*/script.json"))]
+        scripts = [cls.load(p) for p in root.glob("*/script.json")]
+        return sorted(scripts, key=lambda s: (s.sandbox, s.rank, s.name))
+
+    @property
+    def rank(self) -> int:
+        return COLLECTIONS.index(self.collection) if self.collection in COLLECTIONS else len(COLLECTIONS)
 
     @property
     def name(self) -> str:

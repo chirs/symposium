@@ -99,3 +99,9 @@ def test_prompt_path_falls_back_to_the_shared_pool(tmp_path, monkeypatch):
     s.cast = {"alpha": "shared", "beta": "y"}
     assert s.prompt_path("alpha") == shared / "alpha.md"
     assert s.prompt_path("beta") == tmp_path / "dialogues" / "y" / "prompts" / "beta.md"
+
+
+def test_discover_orders_plato_before_the_new_testament():
+    names = [s.name for s in Script.discover()]
+    assert names[:5] == ["crito", "euthyphro", "gorgias", "republic-1", "symposium"]
+    assert names[5] == "acts-17-athens"
