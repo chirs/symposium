@@ -1,7 +1,8 @@
-"""JSON API over one in-memory Dialogue, plus the reading page."""
+"""JSON API over the dialogues on disk, plus the reading page."""
 
 from __future__ import annotations
 
+import shutil
 import threading
 from collections.abc import Callable
 from pathlib import Path
@@ -26,77 +27,113 @@ class InterjectBody(BaseModel):
     at: int | None = None
 
 
+class Room:
+    """One dialogue's script, working file (run.md, created from the seed), and lock."""
+
+    def __init__(self, script: Script):
+        self.script = script
+        self.path = script.dir / "run.md"
+        self.lock = threading.Lock()
+        if not self.path.exists():
+            shutil.copy(script.dir / "seed.md", self.path)
+        self.dialogue = Dialogue.load(self.path)
+
+    def save(self) -> None:
+        self.dialogue.save(self.path)
+
+    def reset(self) -> None:
+        self.dialogue = Dialogue.parse((self.script.dir / "seed.md").read_text())
+        self.save()
+
+    def state(self) -> dict:
+        d = self.dialogue
+        return {
+            **summary(self.script),
+            "exchanges": [{"speaker": e.speaker, "text": e.text} for e in d.exchanges],
+            "has_original": d.has_original,
+            "next_speaker": self.script.next_speaker(d).upper(),
+        }
+
+
+def summary(script: Script) -> dict:
+    return {
+        "name": script.name,
+        "title": script.title,
+        "setting": script.setting,
+        "characters": [c.upper() for c in script.characters],
+    }
+
+
 def build_app(
-    path: Path | None = None,
-    name: str = "republic-1",
+    dialogues_dir: Path = DIALOGUES,
     generate: Callable[[Dialogue, str, Script], str] = gen.generate,
 ) -> FastAPI:
-    if path is not None:
-        dialogue = Dialogue.load(path)
-        local = path.parent / "script.json"
-        script = Script.load(local) if local.exists() else Script.named(name)
-    else:
-        dialogue = Dialogue.parse((DIALOGUES / name / "seed.md").read_text())
-        script = Script.named(name)
-    lock = threading.Lock()
+    scripts = {s.name: s for s in Script.discover(dialogues_dir)}
+    rooms: dict[str, Room] = {}
     app = FastAPI(title="Symposium")
 
-    def save() -> None:
-        if path is not None:
-            dialogue.save(path)
-
-    def state() -> dict:
-        return {
-            "title": script.title,
-            "setting": script.setting,
-            "characters": [c.upper() for c in script.characters],
-            "exchanges": [{"speaker": e.speaker, "text": e.text} for e in dialogue.exchanges],
-            "has_original": dialogue.has_original,
-            "next_speaker": script.next_speaker(dialogue).upper(),
-        }
+    def room(name: str) -> Room:
+        if name not in scripts:
+            raise HTTPException(404, f"no dialogue named {name!r}")
+        if name not in rooms:
+            rooms[name] = Room(scripts[name])
+        return rooms[name]
 
     @app.get("/")
     def index():
         return FileResponse(WEB / "index.html")
 
-    @app.get("/api/dialogue")
-    def get_dialogue():
-        return state()
+    @app.get("/api/dialogues")
+    def list_dialogues():
+        return [summary(s) for s in scripts.values()]
 
-    @app.post("/api/next")
-    def post_next(body: NextBody):
-        if not lock.acquire(blocking=False):
+    @app.get("/api/dialogues/{name}")
+    def get_dialogue(name: str):
+        return room(name).state()
+
+    @app.post("/api/dialogues/{name}/next")
+    def post_next(name: str, body: NextBody):
+        r = room(name)
+        if not r.lock.acquire(blocking=False):
             raise HTTPException(409, "already generating")
         try:
-            speaker = (body.speaker or script.next_speaker(dialogue)).lower()
+            speaker = (body.speaker or r.script.next_speaker(r.dialogue)).lower()
             try:
-                text = generate(dialogue, speaker, script)
+                text = generate(r.dialogue, speaker, r.script)
             except gen.GenerationError as err:
                 raise HTTPException(502, str(err)) from err
-            dialogue.append(speaker, text)
-            save()
+            r.dialogue.append(speaker, text)
+            r.save()
         finally:
-            lock.release()
-        return state()
+            r.lock.release()
+        return r.state()
 
-    @app.post("/api/interject")
-    def post_interject(body: InterjectBody):
+    @app.post("/api/dialogues/{name}/interject")
+    def post_interject(name: str, body: InterjectBody):
+        r = room(name)
         if not body.text.strip():
             raise HTTPException(400, "empty interjection")
         try:
-            dialogue.interject(body.text, at=body.at)
+            r.dialogue.interject(body.text, at=body.at)
         except ValueError as err:
             raise HTTPException(400, str(err)) from err
-        save()
-        return state()
+        r.save()
+        return r.state()
 
-    @app.post("/api/revert")
-    def post_revert():
+    @app.post("/api/dialogues/{name}/revert")
+    def post_revert(name: str):
+        r = room(name)
         try:
-            dialogue.revert()
+            r.dialogue.revert()
         except ValueError as err:
             raise HTTPException(400, str(err)) from err
-        save()
-        return state()
+        r.save()
+        return r.state()
+
+    @app.post("/api/dialogues/{name}/reset")
+    def post_reset(name: str):
+        r = room(name)
+        r.reset()
+        return r.state()
 
     return app

@@ -22,6 +22,7 @@
     --meander: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M0 9 H10 M9 9 V1 H2 V6 H6 V4 H4' fill='none' stroke='%23c9562e' stroke-width='1.3'/%3E%3C/svg%3E");
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html { background: var(--ground); }
   body {
     margin: 0;
@@ -48,6 +49,9 @@
   }
 
   header { text-align: center; margin-bottom: 3rem; }
+  header .nav { margin: 0 0 1.6rem; font-size: .7rem; }
+  header .nav a { color: var(--muted); text-decoration: none; transition: color .2s; }
+  header .nav a:hover { color: var(--clay-bright); }
   header h1 { font-size: 1.35rem; color: var(--gold); margin: 0 0 .35rem; }
   header .setting {
     font-style: italic;
@@ -84,6 +88,32 @@
     box-shadow: 0 0 8px 2px rgba(217, 184, 106, .45);
   }
   .guests li.you { color: var(--gold); opacity: .8; }
+
+  .choice {
+    display: block;
+    width: 100%;
+    text-align: left;
+    margin: 0 0 1.2rem;
+    padding: 1.2rem 1.5rem 1.3rem;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: none;
+    color: var(--ink-dim);
+    font: inherit;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
+    transition: border-color .2s, color .2s, background .3s;
+  }
+  .choice:hover {
+    color: var(--ink);
+    border-color: var(--clay);
+    background: radial-gradient(ellipse 45% 75% at 50% 45%, var(--lamp), transparent 100%);
+  }
+  .choice .name { font-size: .95rem; color: var(--gold); margin-bottom: .3rem; }
+  .choice .where { font-style: italic; margin-bottom: .5rem; }
+  .choice .cast { font-size: .68rem; color: var(--muted); }
+  .choice:hover .cast { color: var(--clay); }
 
   .exchange {
     margin: 0 -1.5rem 1.6rem;
@@ -152,7 +182,7 @@
   button:disabled { opacity: .35; cursor: default; }
   #revert { color: var(--gold); border-color: transparent; }
   #revert:hover { border-color: var(--gold); }
-  #revert[hidden] { display: none; }
+  #reset.armed { color: var(--clay-bright); border-color: var(--clay); }
   form { display: flex; gap: .75rem; align-items: baseline; }
   form .you { font-size: .72rem; color: var(--gold); white-space: nowrap; }
   input {
@@ -173,11 +203,13 @@
 <body>
 <main>
   <header>
+    <p class="nav display"><a href="#" id="all" hidden>&larr; Dialogues</a></p>
     <h1 id="title" class="display">Symposium</h1>
     <p id="setting" class="setting"></p>
     <div class="meander"></div>
     <ul id="guests" class="guests display"></ul>
   </header>
+  <div id="landing"></div>
   <div id="dialogue"></div>
   <div id="status"></div>
 </main>
@@ -190,6 +222,7 @@
       <span id="position"></span>
       <span class="spacer"></span>
       <button id="revert" hidden>Return to the original</button>
+      <button id="reset">Start over</button>
     </div>
     <form id="say">
       <span class="you display">The Stranger</span>
@@ -202,8 +235,11 @@
   const $ = (id) => document.getElementById(id);
   const STRANGER = "THE STRANGER";
   let state = { title: "", setting: "", characters: [], exchanges: [], has_original: false, next_speaker: "" };
+  let current = null;
   let cursor = 1;
   let busy = false;
+
+  const base = () => `/api/dialogues/${encodeURIComponent(current)}`;
 
   async function api(path, body) {
     const res = await fetch(path, body === undefined
@@ -231,6 +267,10 @@
     return div;
   }
 
+  function castNames(characters) {
+    return characters.map((c) => c.charAt(0) + c.slice(1).toLowerCase()).join(" · ");
+  }
+
   function renderGuests(speaking) {
     const list = $("guests");
     list.replaceChildren();
@@ -243,7 +283,33 @@
     }
   }
 
+  function renderLanding(dialogues) {
+    $("all").hidden = true;
+    $("title").textContent = "Symposium";
+    $("setting").textContent = "Choose an evening";
+    $("guests").replaceChildren();
+    $("dialogue").replaceChildren();
+    $("status").textContent = "";
+    document.querySelector("footer").hidden = true;
+    const box = $("landing");
+    box.replaceChildren();
+    for (const d of dialogues) {
+      const b = document.createElement("button");
+      b.className = "choice";
+      b.innerHTML = `<div class="name display"></div><div class="where"></div><div class="cast display"></div>`;
+      b.querySelector(".name").textContent = d.title;
+      b.querySelector(".where").textContent = d.setting;
+      b.querySelector(".cast").textContent = castNames(d.characters);
+      b.addEventListener("click", () => { location.hash = d.name; });
+      box.appendChild(b);
+    }
+    window.scrollTo(0, 0);
+  }
+
   function render(pendingSpeaker) {
+    $("all").hidden = false;
+    $("landing").replaceChildren();
+    document.querySelector("footer").hidden = false;
     $("title").textContent = state.title || "Symposium";
     $("setting").textContent = state.setting || "";
     const box = $("dialogue");
@@ -259,6 +325,9 @@
     $("back").disabled = busy || cursor <= 0;
     $("forward").disabled = busy;
     $("revert").hidden = !state.has_original;
+    $("reset").disabled = busy;
+    $("reset").textContent = "Start over";
+    $("reset").classList.remove("armed");
     $("text").disabled = busy;
     window.scrollTo(0, document.documentElement.scrollHeight);
   }
@@ -273,7 +342,7 @@
   }
 
   async function forward() {
-    if (busy) return;
+    if (busy || !current) return;
     $("status").textContent = "";
     if (cursor < state.exchanges.length) {
       cursor += 1;
@@ -283,7 +352,7 @@
     busy = true;
     render(state.next_speaker);
     try {
-      setState(await api("/api/next", {}));
+      setState(await api(`${base()}/next`, {}));
       cursor = state.exchanges.length;
     } catch (err) {
       fail(err);
@@ -294,16 +363,16 @@
   }
 
   function back() {
-    if (busy || cursor <= 0) return;
+    if (busy || !current || cursor <= 0) return;
     cursor -= 1;
     render();
   }
 
   async function interject(text) {
-    if (busy) return;
+    if (busy || !current) return;
     $("status").textContent = "";
     try {
-      setState(await api("/api/interject", { text, at: cursor }));
+      setState(await api(`${base()}/interject`, { text, at: cursor }));
       cursor = state.exchanges.length;
       render();
       await forward();
@@ -314,9 +383,43 @@
   }
 
   async function revert() {
-    if (busy) return;
+    if (busy || !current) return;
     try {
-      setState(await api("/api/revert", {}));
+      setState(await api(`${base()}/revert`, {}));
+      render();
+    } catch (err) {
+      fail(err);
+    }
+  }
+
+  async function reset() {
+    if (busy || !current) return;
+    const btn = $("reset");
+    if (!btn.classList.contains("armed")) {
+      btn.classList.add("armed");
+      btn.textContent = "Really start over?";
+      return;
+    }
+    try {
+      setState(await api(`${base()}/reset`, {}));
+      cursor = 1;
+      render();
+    } catch (err) {
+      fail(err);
+    }
+  }
+
+  async function route() {
+    const name = decodeURIComponent(location.hash.slice(1));
+    try {
+      if (!name) {
+        current = null;
+        renderLanding(await api("/api/dialogues"));
+        return;
+      }
+      if (name !== current) cursor = 1;
+      current = name;
+      setState(await api(base()));
       render();
     } catch (err) {
       fail(err);
@@ -326,6 +429,7 @@
   $("forward").addEventListener("click", forward);
   $("back").addEventListener("click", back);
   $("revert").addEventListener("click", revert);
+  $("reset").addEventListener("click", reset);
   $("say").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const text = $("text").value.trim();
@@ -334,12 +438,12 @@
     interject(text);
   });
   document.addEventListener("keydown", (ev) => {
-    if (ev.target === $("text")) return;
+    if (ev.target === $("text") || !current) return;
     if (ev.key === "ArrowRight") { ev.preventDefault(); forward(); }
     if (ev.key === "ArrowLeft") { ev.preventDefault(); back(); }
   });
-
-  api("/api/dialogue").then((data) => { setState(data); render(); }).catch(fail);
+  window.addEventListener("hashchange", route);
+  route();
 </script>
 </body>
 </html>

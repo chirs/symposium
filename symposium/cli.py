@@ -145,8 +145,7 @@ def cmd_serve(args) -> None:
 
     from symposium.server import build_app
 
-    path = Path(args.file) if args.file else None
-    uvicorn.run(build_app(path, args.dialogue), host=args.host, port=args.port)
+    uvicorn.run(build_app(), host=args.host, port=args.port)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -186,8 +185,6 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_run)
 
     s = sub.add_parser("serve", help="serve the reading view in a browser")
-    s.add_argument("file", nargs="?", help="working file (default: a fresh copy of the seed)")
-    s.add_argument("--dialogue", default="republic-1")
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8000)
     s.set_defaults(func=cmd_serve)
