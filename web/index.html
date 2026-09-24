@@ -223,9 +223,9 @@
   #revert { color: var(--gold); border-color: transparent; }
   #revert:hover { border-color: var(--gold); }
   #reset.armed { color: var(--clay-bright); border-color: var(--clay); }
-  form { display: flex; gap: .75rem; align-items: baseline; }
-  form .you { font-size: .72rem; color: var(--gold); white-space: nowrap; }
-  input {
+  footer form { display: flex; gap: .75rem; align-items: baseline; }
+  footer form .you { font-size: .72rem; color: var(--gold); white-space: nowrap; }
+  footer input {
     flex: 1;
     font: inherit;
     color: var(--ink);
@@ -236,8 +236,8 @@
     outline: none;
     transition: border-color .2s;
   }
-  input:focus { border-bottom-color: var(--gold); }
-  input::placeholder { color: var(--muted); font-style: italic; }
+  input:focus, textarea:focus { border-bottom-color: var(--gold); }
+  input::placeholder, textarea::placeholder { color: var(--muted); font-style: italic; }
 </style>
 </head>
 <body>
