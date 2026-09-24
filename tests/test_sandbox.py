@@ -70,3 +70,17 @@ def test_remove_only_sandboxes(root):
     assert not s.dir.exists()
     with pytest.raises(ValueError):
         sandbox.remove(Script.named("gorgias", root))
+
+
+def test_shared_pool_in_catalog_and_cast(root, monkeypatch):
+    from symposium import script as script_module
+
+    shared = root / "_shared"
+    shared.mkdir()
+    (shared / "alpha.md").write_text("# System Prompt\n\nYou are Alpha.\n")
+    monkeypatch.setattr(script_module, "SHARED", shared)
+    assert {"speaker": "alpha", "dialogue": "shared", "title": "Shared"} in sandbox.catalog(root)
+    s = sandbox.create("Mixed", [("alpha", "shared"), ("polus", "gorgias")], "s", "c", root=root)
+    assert s.prompt_path("alpha") == shared / "alpha.md"
+    with pytest.raises(ValueError, match="no prompt"):
+        sandbox.create("Bad", [("polus", "shared")], "s", "c", root=root)

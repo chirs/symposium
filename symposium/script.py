@@ -10,6 +10,7 @@ from symposium.dialogue import Dialogue
 
 ROOT = Path(__file__).resolve().parent.parent
 DIALOGUES = ROOT / "dialogues"
+SHARED = ROOT / "prompts" / "characters"  # prompts for characters who recur across dialogues
 
 
 @dataclass
@@ -28,6 +29,7 @@ class Script:
     dir: Path | None = None  # the dialogue directory: script.json, seed.md, prompts/
     sandbox: bool = False  # a user-made conversation: prompts borrowed, speaker chosen by the director
     cast: dict[str, str] = field(default_factory=dict)  # speaker -> dialogue whose prompt to use
+    collection: str = ""  # "Plato", "New Testament": how the landing page groups dialogues
 
     @classmethod
     def load(cls, path: Path) -> Script:
@@ -41,12 +43,18 @@ class Script:
             path.parent,
             data.get("sandbox", False),
             data.get("cast", {}),
+            data.get("collection", ""),
         )
 
     def prompt_path(self, speaker: str) -> Path:
+        """The dialogue's own prompt, or a cast member's source, or the shared pool."""
         if speaker in self.cast:
-            return self.dir.parent / self.cast[speaker] / "prompts" / f"{speaker}.md"
-        return self.dir / "prompts" / f"{speaker}.md"
+            source = self.cast[speaker]
+            if source == "shared":
+                return SHARED / f"{speaker}.md"
+            return self.dir.parent / source / "prompts" / f"{speaker}.md"
+        local = self.dir / "prompts" / f"{speaker}.md"
+        return local if local.exists() else SHARED / f"{speaker}.md"
 
     @classmethod
     def named(cls, name: str, root: Path = DIALOGUES) -> Script:

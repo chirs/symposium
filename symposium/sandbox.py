@@ -7,6 +7,7 @@ import re
 import shutil
 from pathlib import Path
 
+from symposium import script as script_module
 from symposium.dialogue import STRANGER
 from symposium.script import DIALOGUES, Script
 
@@ -25,6 +26,8 @@ def catalog(root: Path | None = None) -> list[dict]:
             continue
         for p in sorted((s.dir / "prompts").glob("*.md")):
             out.append({"speaker": p.stem, "dialogue": s.name, "title": s.title})
+    for p in sorted(script_module.SHARED.glob("*.md")):
+        out.append({"speaker": p.stem, "dialogue": "shared", "title": "Shared"})
     return out
 
 
@@ -49,7 +52,8 @@ def create(
         speaker = speaker.lower()
         if speaker in sources:
             raise ValueError(f"{speaker} is listed twice")
-        if not (root / source / "prompts" / f"{speaker}.md").exists():
+        prompt = (script_module.SHARED if source == "shared" else root / source / "prompts") / f"{speaker}.md"
+        if not prompt.exists():
             raise ValueError(f"no prompt for {speaker} in {source}")
         speakers.append(speaker)
         sources[speaker] = source

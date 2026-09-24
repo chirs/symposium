@@ -69,8 +69,9 @@ def test_every_dialogue_is_complete(script: Script):
     seed = Dialogue.parse((script.dir / "seed.md").read_text())
     assert seed.exchanges
     assert script.next_speaker(seed) in script.characters
+    assert script.collection in ("Plato", "New Testament")
     for c in script.characters:
-        path = script.dir / "prompts" / f"{c}.md"
+        path = script.prompt_path(c)
         assert path.exists(), c
         assert "# System Prompt" in path.read_text(), c
         assert (ROOT / "prompts" / "orchestration.md").exists()
@@ -80,3 +81,21 @@ def test_prompt_path_defaults_to_the_dialogue_directory():
     s = Script.named("gorgias")
     assert s.prompt_path("polus") == s.dir / "prompts" / "polus.md"
     assert not s.sandbox and s.cast == {}
+
+
+def test_prompt_path_falls_back_to_the_shared_pool(tmp_path, monkeypatch):
+    from symposium import script as script_module
+
+    shared = tmp_path / "shared"
+    shared.mkdir()
+    (shared / "alpha.md").write_text("# System Prompt\n\nYou are Alpha.\n")
+    monkeypatch.setattr(script_module, "SHARED", shared)
+    d = tmp_path / "dialogues" / "x"
+    (d / "prompts").mkdir(parents=True)
+    (d / "prompts" / "beta.md").write_text("# System Prompt\n\nYou are Beta.\n")
+    s = Script("X", [Phase("all", ["alpha", "beta"], 1)], dir=d)
+    assert s.prompt_path("beta") == d / "prompts" / "beta.md"
+    assert s.prompt_path("alpha") == shared / "alpha.md"
+    s.cast = {"alpha": "shared", "beta": "y"}
+    assert s.prompt_path("alpha") == shared / "alpha.md"
+    assert s.prompt_path("beta") == tmp_path / "dialogues" / "y" / "prompts" / "beta.md"

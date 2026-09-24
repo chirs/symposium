@@ -44,8 +44,9 @@ def client(root):
 
 def test_index_and_list(client):
     assert "<title>Symposium</title>" in client.get("/").text
-    names = [d["name"] for d in client.get("/api/dialogues").json()]
-    assert names == ["republic-1", "tiny"]
+    rows = client.get("/api/dialogues").json()
+    assert [d["name"] for d in rows] == ["republic-1", "tiny"]
+    assert [d["collection"] for d in rows] == ["Plato", ""]
 
 
 def test_state_creates_run_file(client, root):

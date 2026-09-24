@@ -76,6 +76,7 @@ def summary(script: Script) -> dict:
         "setting": script.setting,
         "characters": [c.upper() for c in script.characters],
         "sandbox": script.sandbox,
+        "collection": script.collection,
     }
 
 
