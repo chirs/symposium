@@ -1,43 +1,29 @@
-# Roadmap
+# ROADMAP.md — Development Roadmap
 
-## Phase 0: Foundation
+Open work only; completed items are removed as they land (see git history).
 
-- [x] Project brief, README, CLAUDE.md
-- [x] Platonic corpus — 25 Jowett dialogues in `corpus/`
-- [x] Character system prompts — Socrates, Thrasymachus, Polemarchus, Cephalus in `prompts/`
+---
 
-## Phase 1: Orchestration & Seed
+## Characters
 
-- [ ] Orchestration spec — turn order, transcript-as-context, interjection handling, branching data model
-- [ ] Seed dialogue — opening exchanges of Republic Book I
+- [ ] Additional Republic speakers: Glaucon, Adeimantus
+- [ ] Let minor speakers (Polemarchus, Cleitophon) interject during the Thrasymachus phase
+- [ ] Corpus-informed prompt refinement: use `corpus/` texts to sharpen character voice
 
-## Phase 2: CLI Engine
+## Dialogues
 
-- [ ] Generation loop — Python script, takes seed + prompts, generates next turn via Anthropic API
-- [ ] Turn management — follow scripted turn order per scene
-- [ ] Interjection — insert user text as "The Stranger", discard subsequent exchanges, continue from new point
-- [ ] Branch revert — restore pre-interjection path
+- [ ] Prompts, script, and seed for a second dialogue (Symposium or Gorgias)
 
-## Phase 3: Web Interface
+## Reading view
 
-- [ ] React SPA scaffold
-- [ ] Reading view — clean serif typography, speaker labels, generous whitespace
-- [ ] Step-through navigation — forward/back through exchanges
-- [ ] Step-forward-generates — advancing past last exchange triggers API call
-- [ ] Text input — interjecting as The Stranger
-- [ ] Branch controls — return to original path
-
-## Phase 4: Expansion
-
-- [ ] Additional Republic speakers (Glaucon, Adeimantus)
-- [ ] Prompts for a second dialogue (Symposium or Gorgias)
-- [ ] Corpus-informed prompt refinement — use `corpus/` texts to sharpen character voice
+- [ ] Jump to a specific exchange
+- [ ] Stream generated text into the page instead of waiting for the whole speech
 
 ## Deferred
 
-- Persistence / save-load
-- Branching tree visualization
-- Dialogue selection UI
-- Export
-- Multi-model orchestration
-- Personality tuning UI
+- Persistence beyond the working file: the text file is the state
+- Branching tree visualization: one path at a time, with revert, is the point
+- Dialogue selection UI: `--dialogue NAME` on the command line is enough for now
+- Export: the dialogue is already a text file
+- Multi-model orchestration: get one model's characters right first
+- Personality tuning UI: edit `prompts/*.md`
