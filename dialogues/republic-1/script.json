@@ -1,0 +1,8 @@
+{
+  "title": "Republic, Book I",
+  "phases": [
+    {"name": "Cephalus", "speakers": ["socrates", "cephalus"], "length": 9},
+    {"name": "Polemarchus", "speakers": ["socrates", "polemarchus"], "length": 18},
+    {"name": "Thrasymachus", "speakers": ["thrasymachus", "socrates"], "length": 60}
+  ]
+}
