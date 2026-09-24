@@ -27,9 +27,9 @@ def parse_choice(text: str, cast: list[str]) -> str | None:
 def choose_speaker(
     dialogue: Dialogue, script: Script, client: anthropic.Anthropic | None = None
 ) -> str:
-    if not script.sandbox:
+    if not script.directed:
         return script.next_speaker(dialogue)
-    cast = script.characters
+    cast = script.speakers
     spoken = [e for e in dialogue.exchanges if not e.is_stage]
     if not spoken:
         return cast[0]

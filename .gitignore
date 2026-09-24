@@ -4,3 +4,4 @@ __pycache__/
 *.egg-info/
 dialogues/*/run*.md
 dialogues/sandbox-*/
+dialogues/*/run*.json

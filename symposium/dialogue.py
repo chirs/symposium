@@ -104,17 +104,24 @@ class Dialogue:
         self.exchanges.append(e)
         return e
 
-    def interject(self, text: str, at: int | None = None) -> Exchange:
-        """Insert The Stranger after the first `at` exchanges and discard the rest."""
+    def diverge(self, exchange: Exchange, at: int | None = None) -> Exchange:
+        """Insert `exchange` after the first `at` exchanges and discard the rest."""
         if at is None:
             at = len(self.exchanges)
         if not 0 <= at <= len(self.exchanges):
             raise ValueError(f"at={at} out of range (0..{len(self.exchanges)})")
         if self.original is None:
             self.original = list(self.exchanges)
-        e = Exchange(STRANGER, text.strip())
-        self.exchanges = self.exchanges[:at] + [e]
-        return e
+        self.exchanges = self.exchanges[:at] + [exchange]
+        return exchange
+
+    def interject(self, text: str, at: int | None = None) -> Exchange:
+        """The Stranger speaks after the first `at` exchanges; the rest is discarded."""
+        return self.diverge(Exchange(STRANGER, text.strip()), at)
+
+    def insert_direction(self, text: str, at: int | None = None) -> Exchange:
+        """A stage direction after the first `at` exchanges; the rest is discarded."""
+        return self.diverge(Exchange(STAGE, text.strip()), at)
 
     def revert(self) -> None:
         if self.original is None:

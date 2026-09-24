@@ -31,6 +31,7 @@ class Script:
     sandbox: bool = False  # a user-made conversation: prompts borrowed, speaker chosen by the director
     cast: dict[str, str] = field(default_factory=dict)  # speaker -> dialogue whose prompt to use
     collection: str = ""  # "Plato", "New Testament": how the landing page groups dialogues
+    guests: dict[str, str] = field(default_factory=dict)  # invited into this run: speaker -> source
 
     @classmethod
     def load(cls, path: Path) -> Script:
@@ -48,14 +49,22 @@ class Script:
         )
 
     def prompt_path(self, speaker: str) -> Path:
-        """The dialogue's own prompt, or a cast member's source, or the shared pool."""
-        if speaker in self.cast:
-            source = self.cast[speaker]
-            if source == "shared":
-                return SHARED / f"{speaker}.md"
-            return self.dir.parent / source / "prompts" / f"{speaker}.md"
+        """A cast or guest entry's source, else the dialogue's own prompt, else the shared pool."""
+        source = self.cast.get(speaker) or self.guests.get(speaker)
+        if source:
+            return source_prompt(self.dir.parent, speaker, source)
         local = self.dir / "prompts" / f"{speaker}.md"
         return local if local.exists() else SHARED / f"{speaker}.md"
+
+    @property
+    def speakers(self) -> list[str]:
+        """The scripted characters plus any guests, in order of arrival."""
+        return self.characters + [g for g in self.guests if g not in self.characters]
+
+    @property
+    def directed(self) -> bool:
+        """No script covers this company, so a director picks the next speaker."""
+        return self.sandbox or bool(self.guests)
 
     @classmethod
     def named(cls, name: str, root: Path = DIALOGUES) -> Script:
@@ -91,8 +100,15 @@ class Script:
         return self.phases[-1]
 
     def next_speaker(self, dialogue: Dialogue) -> str:
-        cycle = self.phase_at(dialogue.turn_count).speakers
+        cycle = self.speakers if self.guests else self.phase_at(dialogue.turn_count).speakers
         last = dialogue.last_speaker
         if last in cycle:
             return cycle[(cycle.index(last) + 1) % len(cycle)]
         return cycle[0]
+
+
+def source_prompt(root: Path, speaker: str, source: str) -> Path:
+    """Where a borrowed character's prompt lives: the shared pool or another dialogue."""
+    if source == "shared":
+        return SHARED / f"{speaker}.md"
+    return root / source / "prompts" / f"{speaker}.md"

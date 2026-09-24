@@ -14,6 +14,11 @@ from symposium.script import ROOT, Script
 PROMPTS = ROOT / "prompts"
 DEFAULT_MODEL = "claude-opus-5"
 MARKER = "# System Prompt"
+GUEST_PREFIX = (
+    "You were not in this scene as it is written. You have just come in and joined this company; "
+    "you keep your convictions, your manner, and your memory of your own circumstances, and you "
+    "answer what is said here. The scene the others are in:"
+)
 SANDBOX_PREFIX = (
     "This is a new conversation, not the scene of any text. You keep your convictions, your "
     "manner, and your memory of your own circumstances, but the company and the question are these:"
@@ -41,7 +46,9 @@ def character_prompt(script: Script, speaker: str) -> str:
 def system_prompt(script: Script, speaker: str) -> str:
     parts = [(PROMPTS / "orchestration.md").read_text().strip(), character_prompt(script, speaker)]
     scene = script.scene.strip()
-    if script.sandbox:
+    if speaker in script.guests:
+        scene = f"{GUEST_PREFIX}\n\n{scene}"
+    elif script.sandbox:
         scene = f"{SANDBOX_PREFIX}\n\n{scene}"
     if scene:
         parts.append(f"## The scene\n\n{scene}")

@@ -105,3 +105,12 @@ def test_discover_orders_plato_before_the_new_testament():
     names = [s.name for s in Script.discover()]
     assert names[:5] == ["crito", "euthyphro", "gorgias", "republic-1", "symposium"]
     assert names[5] == "acts-17-athens"
+
+
+def test_speakers_and_directed_with_guests():
+    s = Script.named("gorgias")
+    assert s.speakers == s.characters and not s.directed
+    s.guests = {"jesus": "shared", "polus": "gorgias"}
+    assert s.speakers == ["socrates", "gorgias", "polus", "callicles", "jesus"] and s.directed
+    d = Dialogue.parse("JESUS: Hm.\n")
+    assert s.next_speaker(d) == "socrates"

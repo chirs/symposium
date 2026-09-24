@@ -9,7 +9,7 @@ from pathlib import Path
 
 from symposium import script as script_module
 from symposium.dialogue import STRANGER
-from symposium.script import DIALOGUES, Script
+from symposium.script import DIALOGUES, Script, source_prompt
 
 SLUG = re.compile(r"[^a-z0-9]+")
 
@@ -52,8 +52,7 @@ def create(
         speaker = speaker.lower()
         if speaker in sources:
             raise ValueError(f"{speaker} is listed twice")
-        prompt = (script_module.SHARED if source == "shared" else root / source / "prompts") / f"{speaker}.md"
-        if not prompt.exists():
+        if not source_prompt(root, speaker, source).exists():
             raise ValueError(f"no prompt for {speaker} in {source}")
         speakers.append(speaker)
         sources[speaker] = source
