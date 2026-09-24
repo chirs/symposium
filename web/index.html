@@ -114,6 +114,43 @@
   .choice .where { font-style: italic; margin-bottom: .5rem; }
   .choice .cast { font-size: .68rem; color: var(--muted); }
   .choice:hover .cast { color: var(--clay); }
+  .choice .remove {
+    float: right;
+    margin: -.2rem 0 0 1rem;
+    font-size: .62rem;
+    color: var(--muted);
+    border-color: transparent;
+  }
+  .choice .remove:hover, .choice .remove.armed { color: var(--clay-bright); border-color: var(--clay); }
+  .section {
+    font-size: .8rem;
+    color: var(--muted);
+    margin: 3rem 0 1.2rem;
+    text-align: center;
+  }
+  .maker { border: 1px solid var(--rule); border-radius: 6px; padding: 1.4rem 1.5rem 1.6rem; }
+  .maker label { display: block; font-size: .68rem; color: var(--muted); margin: 1.1rem 0 .3rem; }
+  .maker label:first-child { margin-top: 0; }
+  .maker input[type=text], .maker textarea {
+    width: 100%;
+    font: inherit;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--rule);
+    padding: .3rem 0;
+    outline: none;
+  }
+  .maker textarea { min-height: 4.5rem; resize: vertical; line-height: 1.5; }
+  .maker input:focus, .maker textarea:focus { border-bottom-color: var(--gold); }
+  .cast-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: .3rem 1.2rem; }
+  .cast-pick .group { grid-column: 1 / -1; font-size: .68rem; color: var(--clay); margin-top: .8rem; }
+  .cast-pick .pick { display: flex; align-items: baseline; gap: .5rem; font-size: 1.05rem; cursor: pointer; color: var(--ink-dim); }
+  .cast-pick input { accent-color: var(--clay); }
+  .cast-pick .pick:hover { color: var(--ink); }
+  .maker .actions { margin-top: 1.4rem; display: flex; gap: .8rem; align-items: baseline; }
+  .guests li.speaker-tap { cursor: pointer; }
+  .guests li.speaker-tap:hover { color: var(--gold); }
 
   .exchange {
     margin: 0 -1.5rem 1.6rem;
@@ -134,6 +171,7 @@
   .exchange.current .speaker { color: var(--clay-bright); }
   .exchange.stage { text-align: center; font-style: italic; color: var(--muted); }
   .exchange.stage.current { color: var(--ink-dim); }
+  .exchange.stage.pending p { font-size: 1.6rem; letter-spacing: .3em; }
   .exchange.stranger .speaker { color: var(--gold); }
   .exchange p { margin: 0 0 .8em; }
   .exchange p:last-child { margin-bottom: 0; }
@@ -212,6 +250,25 @@
     <ul id="guests" class="guests display"></ul>
   </header>
   <div id="landing"></div>
+  <div id="maker" hidden>
+    <p class="section display">A conversation of your own</p>
+    <form class="maker" id="make">
+      <label class="display">Title</label>
+      <input type="text" id="mk-title" autocomplete="off" placeholder="Power and Justice">
+      <label class="display">Who is present</label>
+      <div class="cast-pick" id="mk-cast"></div>
+      <label class="display">Where</label>
+      <input type="text" id="mk-setting" autocomplete="off" placeholder="A wine shop in the Piraeus, late">
+      <label class="display">The scene, as every speaker is told it</label>
+      <textarea id="mk-scene" placeholder="They have been drinking since sundown. The question of whether the strong man is the happy man has come up, and no one will let it drop."></textarea>
+      <label class="display">Your opening question, as The Stranger (optional)</label>
+      <input type="text" id="mk-opening" autocomplete="off" placeholder="Is the man who takes what he wants happier than the man who takes what is his?">
+      <div class="actions">
+        <button type="submit">Begin</button>
+        <span id="mk-status"></span>
+      </div>
+    </form>
+  </div>
   <div id="dialogue"></div>
   <div id="status"></div>
 </main>
@@ -243,10 +300,10 @@
 
   const base = () => `/api/dialogues/${encodeURIComponent(current)}`;
 
-  async function api(path, body) {
-    const res = await fetch(path, body === undefined
+  async function api(path, body, method) {
+    const res = await fetch(path, body === undefined && !method
       ? {}
-      : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      : { method: method || "POST", headers: { "Content-Type": "application/json" }, body: body == null ? undefined : JSON.stringify(body) });
     const raw = await res.text();
     let data = null;
     try { data = JSON.parse(raw); } catch (_) { /* not JSON */ }
@@ -282,9 +339,68 @@
       const li = document.createElement("li");
       li.textContent = name === STRANGER ? "The Stranger" : name;
       if (name === STRANGER) li.classList.add("you");
+      else {
+        li.classList.add("speaker-tap");
+        li.title = `${name.charAt(0) + name.slice(1).toLowerCase()} speaks next`;
+        li.addEventListener("click", () => generateNext(name));
+      }
       if (name === speaking) li.classList.add("speaking");
       list.appendChild(li);
     }
+  }
+
+  function choice(d) {
+    const b = document.createElement("button");
+    b.className = "choice";
+    b.innerHTML = `<div class="name display"></div><div class="where"></div><div class="cast display"></div>`;
+    b.querySelector(".name").textContent = d.title;
+    b.querySelector(".where").textContent = d.setting;
+    b.querySelector(".cast").textContent = castNames(d.characters);
+    b.addEventListener("click", () => { location.hash = d.name; });
+    if (d.sandbox) {
+      const rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "remove display";
+      rm.textContent = "Remove";
+      rm.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        if (!rm.classList.contains("armed")) {
+          rm.classList.add("armed");
+          rm.textContent = "Really remove?";
+          return;
+        }
+        try {
+          await api(`/api/dialogues/${encodeURIComponent(d.name)}`, null, "DELETE");
+          route();
+        } catch (err) { fail(err); }
+      });
+      b.querySelector(".name").appendChild(rm);
+    }
+    return b;
+  }
+
+  async function renderMaker() {
+    const box = $("mk-cast");
+    box.replaceChildren();
+    let group = null;
+    for (const row of await api("/api/characters")) {
+      if (row.dialogue !== group) {
+        group = row.dialogue;
+        const h = document.createElement("div");
+        h.className = "group display";
+        h.textContent = row.title;
+        box.appendChild(h);
+      }
+      const label = document.createElement("label");
+      label.className = "pick";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = `${row.speaker}@${row.dialogue}`;
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(row.speaker.charAt(0).toUpperCase() + row.speaker.slice(1)));
+      box.appendChild(label);
+    }
+    $("maker").hidden = false;
   }
 
   function renderLanding(dialogues) {
@@ -297,22 +413,23 @@
     document.querySelector("footer").hidden = true;
     const box = $("landing");
     box.replaceChildren();
-    for (const d of dialogues) {
-      const b = document.createElement("button");
-      b.className = "choice";
-      b.innerHTML = `<div class="name display"></div><div class="where"></div><div class="cast display"></div>`;
-      b.querySelector(".name").textContent = d.title;
-      b.querySelector(".where").textContent = d.setting;
-      b.querySelector(".cast").textContent = castNames(d.characters);
-      b.addEventListener("click", () => { location.hash = d.name; });
-      box.appendChild(b);
+    for (const d of dialogues.filter((d) => !d.sandbox)) box.appendChild(choice(d));
+    const mine = dialogues.filter((d) => d.sandbox);
+    if (mine.length) {
+      const h = document.createElement("p");
+      h.className = "section display";
+      h.textContent = "Your conversations";
+      box.appendChild(h);
+      for (const d of mine) box.appendChild(choice(d));
     }
+    renderMaker().catch(fail);
     window.scrollTo(0, 0);
   }
 
   function render(pendingSpeaker) {
     $("all").hidden = false;
     $("landing").replaceChildren();
+    $("maker").hidden = true;
     document.querySelector("footer").hidden = false;
     $("title").textContent = state.title || "Symposium";
     $("setting").textContent = state.setting || "";
@@ -323,7 +440,7 @@
       const isCurrent = !pendingSpeaker && i === shown.length - 1;
       box.appendChild(block(e.speaker, e.text, isCurrent ? "current" : ""));
     });
-    if (pendingSpeaker) box.appendChild(block(pendingSpeaker, "…", "pending current"));
+    if (pendingSpeaker !== undefined) box.appendChild(block(pendingSpeaker, "…", "pending current"));
     const lastSpeech = [...shown].reverse().find((e) => e.speaker !== "");
     renderGuests(pendingSpeaker || (lastSpeech ? lastSpeech.speaker : ""));
     $("position").textContent = `${cursor} of ${state.exchanges.length}`;
@@ -346,6 +463,23 @@
     $("status").textContent = err.message;
   }
 
+  async function generateNext(speaker) {
+    if (busy || !current) return;
+    $("status").textContent = "";
+    busy = true;
+    cursor = state.exchanges.length;
+    render(speaker || state.next_speaker || "");
+    try {
+      setState(await api(`${base()}/next`, speaker ? { speaker: speaker.toLowerCase() } : {}));
+      cursor = state.exchanges.length;
+    } catch (err) {
+      fail(err);
+    } finally {
+      busy = false;
+      render();
+    }
+  }
+
   async function forward() {
     if (busy || !current) return;
     $("status").textContent = "";
@@ -354,17 +488,7 @@
       render();
       return;
     }
-    busy = true;
-    render(state.next_speaker);
-    try {
-      setState(await api(`${base()}/next`, {}));
-      cursor = state.exchanges.length;
-    } catch (err) {
-      fail(err);
-    } finally {
-      busy = false;
-      render();
-    }
+    await generateNext(null);
   }
 
   function back() {
@@ -431,6 +555,24 @@
     }
   }
 
+  $("make").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const cast = [...document.querySelectorAll("#mk-cast input:checked")].map((cb) => {
+      const [speaker, dialogue] = cb.value.split("@");
+      return { speaker, dialogue };
+    });
+    $("mk-status").textContent = "";
+    try {
+      const made = await api("/api/sandboxes", {
+        title: $("mk-title").value, cast,
+        setting: $("mk-setting").value, scene: $("mk-scene").value, opening: $("mk-opening").value,
+      });
+      $("make").reset();
+      location.hash = made.name;
+    } catch (err) {
+      $("mk-status").textContent = err.message;
+    }
+  });
   $("forward").addEventListener("click", forward);
   $("back").addEventListener("click", back);
   $("revert").addEventListener("click", revert);

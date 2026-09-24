@@ -17,6 +17,10 @@ TINY_SCRIPT = """{"title": "Tiny", "setting": "A porch", "scene": "Two men talk.
 REPUBLIC_LEN = len(Dialogue.parse((DIALOGUES / "republic-1" / "seed.md").read_text()).exchanges)
 
 
+def scripted_choose(dialogue, script):
+    return script.next_speaker(dialogue)
+
+
 def fake_generate(dialogue, speaker, script):
     return f"({speaker} speaks in {script.name})"
 
@@ -96,3 +100,38 @@ def test_generation_error_is_502(root):
     client = TestClient(build_app(dialogues_dir=root, generate=broken))
     res = client.post("/api/dialogues/tiny/next", json={})
     assert res.status_code == 502 and "refusal" in res.json()["detail"]
+
+
+def test_characters_and_sandbox_lifecycle(root):
+    chosen = []
+
+    def choose(dialogue, script):
+        chosen.append(script.name)
+        return "polemarchus"
+
+    client = TestClient(build_app(dialogues_dir=root, generate=fake_generate, choose=choose))
+    rows = client.get("/api/characters").json()
+    assert {"speaker": "polemarchus", "dialogue": "republic-1", "title": "Republic, Book I"} in rows
+    assert all(not r["dialogue"].startswith("sandbox") for r in rows)
+
+    body = {"title": "Late Night", "cast": [{"speaker": "socrates", "dialogue": "republic-1"}, {"speaker": "polemarchus", "dialogue": "republic-1"}],
+            "setting": "A wine shop", "scene": "They argue.", "opening": "Who is happier?"}
+    made = client.post("/api/sandboxes", json=body).json()
+    assert made["name"] == "sandbox-late-night" and made["sandbox"] is True
+    assert made["characters"] == ["SOCRATES", "POLEMARCHUS"]
+    assert [d["name"] for d in client.get("/api/dialogues").json() if d["sandbox"]] == ["sandbox-late-night"]
+    assert client.post("/api/sandboxes", json=body).status_code == 400
+    assert client.post("/api/sandboxes", json={**body, "title": "Bad", "cast": [{"speaker": "glaucon", "dialogue": "republic-1"}]}).status_code == 400
+
+    state = client.get("/api/dialogues/sandbox-late-night").json()
+    assert state["next_speaker"] == "" and state["exchanges"][1]["speaker"] == "THE STRANGER"
+    state = client.post("/api/dialogues/sandbox-late-night/next", json={}).json()
+    assert state["exchanges"][-1]["speaker"] == "POLEMARCHUS" and chosen == ["sandbox-late-night"]
+    state = client.post("/api/dialogues/sandbox-late-night/next", json={"speaker": "socrates"}).json()
+    assert state["exchanges"][-1]["speaker"] == "SOCRATES" and len(chosen) == 1
+
+    assert client.delete("/api/dialogues/republic-1").status_code == 400
+    assert client.delete("/api/dialogues/nope").status_code == 404
+    assert client.delete("/api/dialogues/sandbox-late-night").json() == {"removed": "sandbox-late-night"}
+    assert not (root / "sandbox-late-night").exists()
+    assert client.get("/api/dialogues/sandbox-late-night").status_code == 404

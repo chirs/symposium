@@ -17,10 +17,10 @@ def slugify(title: str) -> str:
     return SLUG.sub("-", title.lower()).strip("-")
 
 
-def catalog(root: Path = DIALOGUES) -> list[dict]:
+def catalog(root: Path | None = None) -> list[dict]:
     """Every character prompt on disk, with the dialogue it belongs to."""
     out = []
-    for s in Script.discover(root):
+    for s in Script.discover(root or DIALOGUES):
         if s.sandbox:
             continue
         for p in sorted((s.dir / "prompts").glob("*.md")):
@@ -34,9 +34,10 @@ def create(
     setting: str,
     scene: str,
     opening: str = "",
-    root: Path = DIALOGUES,
+    root: Path | None = None,
 ) -> Script:
     """Write dialogues/sandbox-<slug>/ with a script borrowing each (speaker, dialogue) prompt."""
+    root = root or DIALOGUES
     slug = slugify(title)
     if not slug:
         raise ValueError("a title is needed")
