@@ -1,0 +1,25 @@
+[project]
+name = "symposium"
+version = "0.1.0"
+description = "Platonic dialogues you can step into"
+requires-python = ">=3.11"
+dependencies = ["anthropic", "fastapi", "uvicorn"]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "httpx"]
+
+[project.scripts]
+symposium = "symposium.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["symposium"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
