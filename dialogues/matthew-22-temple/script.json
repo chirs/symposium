@@ -1,0 +1,40 @@
+{
+  "title": "The Disputes in the Temple",
+  "collection": "New Testament",
+  "setting": "The temple courts in Jerusalem, in the last week",
+  "scene": "The last week before the Passover. Jesus has entered Jerusalem to acclaim, driven the merchants from the temple, and been teaching in its courts before the multitudes, telling parables against the chief priests and Pharisees. Now the parties come to him in turn to entrap him in his talk: the Pharisees’ disciples with the Herodians on the tax to Caesar; the Sadducees, who deny the resurrection, with their puzzle of the seven brothers; a lawyer of the Pharisees on the greatest commandment. Then he asks them a question of his own. The crowd listens. In the text the tax question is put by disciples of the Pharisees together with Herodians; here it is spoken by PHARISEE.",
+  "phases": [
+    {
+      "name": "Tribute",
+      "speakers": [
+        "pharisee",
+        "jesus"
+      ],
+      "length": 5
+    },
+    {
+      "name": "Resurrection",
+      "speakers": [
+        "sadducee",
+        "jesus"
+      ],
+      "length": 2
+    },
+    {
+      "name": "Commandment",
+      "speakers": [
+        "lawyer",
+        "jesus"
+      ],
+      "length": 2
+    },
+    {
+      "name": "The Christ",
+      "speakers": [
+        "jesus",
+        "pharisee"
+      ],
+      "length": 60
+    }
+  ]
+}
