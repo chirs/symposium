@@ -14,6 +14,7 @@ Open work only; completed items are removed as they land (see git history).
 
 - [ ] Read each dialogue's generated output for voice and tighten the prompts (only Republic I has been run live)
 - [ ] Proofread the converted seeds against the corpus for OCR artifacts and attribution slips, especially Republic I and the Symposium
+- [ ] More New Testament passages: the rich young ruler, the trial before Caiaphas, Paul before Agrippa, the Jerusalem council
 
 ## Reading view
 

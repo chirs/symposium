@@ -27,6 +27,10 @@ or in the terminal:
 
 ## Dialogues
 
+The landing page groups them by collection.
+
+**Plato** (Jowett, 1892):
+
 | Name | Speakers | Text |
 | --- | --- | --- |
 | `republic-1` | Socrates, Cephalus, Polemarchus, Thrasymachus (Glaucon, Adeimantus, Cleitophon briefly) | Republic Book I, complete |
@@ -35,7 +39,17 @@ or in the terminal:
 | `gorgias` | Socrates, Gorgias, Polus, Callicles (Chaerephon briefly) | complete |
 | `symposium` | Phaedrus, Pausanias, Eryximachus, Aristophanes, Agathon, Socrates, Alcibiades | complete, from Aristodemus's arrival at Agathon's |
 
-Each lives in `dialogues/<name>/` as `script.json` (title, setting, scene, turn order), `seed.md` (the whole dialogue in script form, from the Jowett text in `corpus/`, with narration turned into bracketed stage directions), and `prompts/<speaker>.md` (a character profile above `# System Prompt`, the prompt itself below). Socrates has a different prompt in each, because he argues differently in each.
+**New Testament** (World English Bible, public domain):
+
+| Name | Speakers | Text |
+| --- | --- | --- |
+| `john-3-nicodemus` | Jesus, Nicodemus | John 3:1–21 |
+| `john-4-well` | Jesus, the Samaritan woman (disciples, Samaritans) | John 4:1–42 |
+| `john-18-pilate` | Pilate, Jesus, the chief priests (the crowd) | John 18:28–19:16 |
+| `acts-17-athens` | Paul, a Stoic, an Epicurean | Acts 17:16–34 |
+| `matthew-22-temple` | Jesus, a Pharisee, a Sadducee, a lawyer | Matthew 22:15–46 |
+
+Each lives in `dialogues/<name>/` as `script.json` (title, collection, setting, scene, turn order), `seed.md` (the whole passage in script form, from the source text in `corpus/`, with narration turned into bracketed stage directions), and `prompts/<speaker>.md` (a character profile above `# System Prompt`, the prompt itself below). Socrates has a different prompt in each Platonic dialogue, because he argues differently in each. Characters who recur across passages live once in `prompts/characters/` (Jesus), which any dialogue falls back to and which the sandbox lists as "Shared".
 
 You read Plato's text; generation happens only where you leave it: after an interjection as The Stranger, or past the end. `tools/` holds the scripts that made the seeds from the corpus.
 
@@ -80,16 +94,16 @@ How generation, turn order, and branching work: [docs/orchestration.md](docs/orc
 ```
 symposium/      engine: dialogue file model, scripted turn order, generation, CLI, server
 dialogues/      one directory per dialogue: script.json, seed.md, prompts/
-prompts/        orchestration.md, the rules shared by every character
+prompts/        orchestration.md and director.md; prompts/characters/ is the shared pool
 web/            the reading view, one static page
 docs/           orchestration spec
-corpus/         25 Platonic dialogues, full text (Jowett 3rd ed., 1892)
+corpus/         25 Platonic dialogues (Jowett 3rd ed., 1892); corpus/nt/ holds World English Bible chapters
 tests/          pytest; generation is tested against a fake client
 ```
 
 ## Corpus
 
-25 dialogues in `corpus/`, full text from the Jowett translation (3rd edition, 1892):
+25 dialogues in `corpus/`, full text from the Jowett translation (3rd edition, 1892), and in `corpus/nt/` the World English Bible chapters the New Testament dialogues are cut from, fetched by `tools/fetch_web.py`:
 
 **Early:** Apology, Charmides, Crito, Euthydemus, Euthyphro, Gorgias, Ion, Laches, Lysis, Meno, Protagoras
 **Middle:** Cratylus, Phaedo, Phaedrus, Republic, Symposium, Theaetetus, Parmenides

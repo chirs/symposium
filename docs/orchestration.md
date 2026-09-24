@@ -30,7 +30,7 @@ dialogues/<name>/
   run.md          the working copy, created from seed.md on first use (gitignored)
 ```
 
-`symposium new <name>` copies the seed to `run.md`; the server does the same on first access. The seed is the complete text, so reading a dialogue is reading Plato; the model only speaks after an interjection or past the end. `tools/from_corpus.py` converts the speaker-tagged corpus files; `tools/republic1.py` and `tools/symposium.py` convert the two narrated ones and record every hand correction. `script.json` carries a `setting` (one line, shown under the title) and a `scene` (a paragraph on who is present, where, and what has just happened), both optional.
+`script.json` also carries a `collection` ("Plato", "New Testament") that groups the landing page. `symposium new <name>` copies the seed to `run.md`; the server does the same on first access. The seed is the complete text, so reading a dialogue is reading Plato; the model only speaks after an interjection or past the end. `tools/from_corpus.py` converts the speaker-tagged corpus files; `tools/republic1.py` and `tools/symposium.py` convert the two narrated ones and record every hand correction. `script.json` carries a `setting` (one line, shown under the title) and a `scene` (a paragraph on who is present, where, and what has just happened), both optional.
 
 ## Turn order
 
@@ -48,7 +48,7 @@ Because the rule keys off the last speaker rather than an index, hand edits and 
 
 One API call per exchange (`symposium/generate.py`):
 
-- **System prompt**: `prompts/orchestration.md`, the rules shared by every character; then the `# System Prompt` section of `dialogues/<name>/prompts/<speaker>.md` (the profile above that heading is documentation and is not sent); then the script's `scene` under a `## The scene` heading.
+- **System prompt**: `prompts/orchestration.md`, the rules shared by every character; then the `# System Prompt` section of the speaker's prompt (the profile above that heading is documentation and is not sent); then the script's `scene` under a `## The scene` heading. The prompt is looked up in order: a sandbox cast entry's source dialogue, the dialogue's own `prompts/`, then the shared pool `prompts/characters/` for characters who recur across dialogues.
 - **User message**: the full transcript, one content block per exchange, then a cue naming the speaker and asking for the words alone. A cache breakpoint sits on the last transcript block so a character's later turns reuse the cached prefix.
 - **Model**: `SYMPOSIUM_MODEL`, default `claude-opus-5`, with the model's default adaptive thinking. `SYMPOSIUM_EFFORT` sets `output_config.effort` when present.
 - The response streams to the terminal as it arrives. Any stop reason other than `end_turn` is an error and nothing is appended. A leading speaker label, if the model adds one anyway, is stripped.

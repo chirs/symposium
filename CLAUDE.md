@@ -4,7 +4,7 @@
 
 A simulator for Platonic dialogues using the Claude API. Each character has a system prompt capturing their argumentative style, and the dialogue builds exchange by exchange. The user can interject as "The Stranger" at any point, and the dialogue continues from there.
 
-Five dialogues so far: Republic I, Euthyphro, Crito, Gorgias, Symposium, each complete in script form. Each is a directory under `dialogues/` with its script, seed (the whole Jowett text), and prompts. The reader steps through Plato; the model speaks only after an interjection or past the end. A Python CLI (`symposium`) steps, generates, interjects, and reverts a plain text file; a FastAPI server exposes every dialogue to a single-page reading view that lets the reader choose one.
+Ten dialogues so far in two collections: Plato (Republic I, Euthyphro, Crito, Gorgias, Symposium, from Jowett) and the New Testament (Nicodemus, the woman at the well, Jesus before Pilate, Paul at Athens, the temple disputes, from the World English Bible), each complete in script form. Each is a directory under `dialogues/` with its script, seed (the whole Jowett text), and prompts. The reader steps through Plato; the model speaks only after an interjection or past the end. A Python CLI (`symposium`) steps, generates, interjects, and reverts a plain text file; a FastAPI server exposes every dialogue to a single-page reading view that lets the reader choose one.
 
 ## Design Principles
 
@@ -20,6 +20,7 @@ Five dialogues so far: Republic I, Euthyphro, Crito, Gorgias, Symposium, each co
 - System prompt per call: `prompts/orchestration.md`, then the `# System Prompt` section of `dialogues/<name>/prompts/<speaker>.md`, then the script's `scene` paragraph. The transcript goes as one content block per exchange with a cache breakpoint on the last one.
 - Turn order is scripted per dialogue in `script.json` phases, not model-driven. The Stranger's lines never consume a turn. Symposium uses one phase per encomium.
 - Branching: an interjection discards everything after it. The first divergence snapshots the file to `<file>.original.md`; revert restores it. Start over copies the seed back.
+- Prompt lookup: a sandbox cast entry, else the dialogue's own `prompts/`, else the shared pool `prompts/characters/` (Jesus lives there so he is one character everywhere). `collection` in `script.json` groups the landing page.
 - Sandboxes (`dialogues/sandbox-*/`, gitignored, made from the page or `symposium sandbox`) borrow prompts through a `cast` map in their script and have no turn order: `symposium/director.py` asks `SYMPOSIUM_DIRECTOR_MODEL` (default `claude-haiku-4-5`) who speaks next, with round-robin as the fallback. Their scene is prefixed with a note that this is a new conversation, not the scene of any text.
 
 Full spec: `docs/orchestration.md`.
@@ -36,6 +37,8 @@ symposium/cli.py        new / show / next / interject / revert / run / character
 symposium/server.py     build_app(dialogues_dir, generate, choose): /api/dialogues[/{name}[/next|interject|revert|reset]], /api/characters, /api/sandboxes
 web/index.html          landing list + reading view, vanilla JS
 prompts/orchestration.md  rules shared by every character; prompts/director.md picks the next speaker
+prompts/characters/     shared pool for characters who recur across dialogues (jesus.md)
+corpus/nt/              World English Bible chapters, fetched with tools/fetch_web.py
 dialogues/<name>/       script.json, seed.md (full text), prompts/<speaker>.md; run*.md is gitignored
 tools/                  one-off converters from corpus/ text to script form (tagged texts, Republic I, Symposium)
 corpus/                 25 Jowett dialogues, plain text
@@ -43,7 +46,7 @@ corpus/                 25 Jowett dialogues, plain text
 
 ## Adding a dialogue
 
-Make `dialogues/<name>/` with `script.json` (title, setting, scene, phases), `seed.md` holding the whole dialogue in script form (for speaker-tagged corpus files, `tools/from_corpus.py` does it; narrated ones need a converter like `tools/republic1.py` and a read-through), and one prompt per speaker named in the phases, each with a profile above `# System Prompt` and the prompt below. `tests/test_script.py` checks every dialogue directory for completeness. Socrates gets his own prompt per dialogue; do not share one.
+Make `dialogues/<name>/` with `script.json` (title, collection, setting, scene, phases), `seed.md` holding the whole dialogue in script form (for speaker-tagged corpus files, `tools/from_corpus.py` does it; narrated ones need a converter like `tools/republic1.py` and a read-through), and one prompt per speaker named in the phases, each with a profile above `# System Prompt` and the prompt below. `tests/test_script.py` checks every dialogue directory for completeness. Socrates gets his own prompt per dialogue; do not share one.
 
 ## Development
 
