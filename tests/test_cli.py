@@ -17,7 +17,7 @@ def run_file(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def stub_generate(monkeypatch):
-    def fake(dialogue, speaker, client=None, on_text=None):
+    def fake(dialogue, speaker, script, client=None, on_text=None):
         if on_text:
             on_text("So it seems.")
         return "So it seems."

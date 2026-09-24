@@ -1,3 +1,5 @@
+import pytest
+
 from symposium.dialogue import Dialogue
 from symposium.script import DIALOGUES, ROOT, Phase, Script
 
@@ -48,10 +50,23 @@ def test_characters_in_order_of_appearance():
 
 def test_republic_seed_matches_script():
     script = Script.named("republic-1")
-    seed = Dialogue.parse((DIALOGUES / "republic-1" / "seed.md").read_text())
+    assert script.name == "republic-1"
+    assert script.dir == DIALOGUES / "republic-1"
+    seed = Dialogue.parse((script.dir / "seed.md").read_text())
     assert script.phase_at(script.phases[0].length - 1).name == "Cephalus"
     assert script.phase_at(seed.turn_count).name == "Polemarchus"
     assert seed.exchanges[script.phases[0].length - 1].key == "cephalus"
     assert script.next_speaker(seed) == "socrates"
+
+
+@pytest.mark.parametrize("script", Script.discover(), ids=lambda s: s.name)
+def test_every_dialogue_is_complete(script: Script):
+    assert script.title and script.setting and script.scene
+    seed = Dialogue.parse((script.dir / "seed.md").read_text())
+    assert seed.exchanges
+    assert script.next_speaker(seed) in script.characters
     for c in script.characters:
-        assert (ROOT / "prompts" / f"{c}.md").exists(), c
+        path = script.dir / "prompts" / f"{c}.md"
+        assert path.exists(), c
+        assert "# System Prompt" in path.read_text(), c
+        assert (ROOT / "prompts" / "orchestration.md").exists()

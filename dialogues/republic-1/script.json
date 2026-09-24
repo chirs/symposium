@@ -1,9 +1,31 @@
 {
   "title": "Republic, Book I",
   "setting": "The house of Cephalus, in the Piraeus",
+  "scene": "Evening at the house of Cephalus in the Piraeus, after the festival of Bendis. Socrates came down with Glaucon and was pressed to stay by Polemarchus and his friends. Present in the room: Cephalus (old, garlanded, just back from sacrificing), his sons Polemarchus, Lysias, and Euthydemus, Thrasymachus of Chalcedon, Charmantides, Cleitophon, Glaucon, Adeimantus, Niceratus. The question of what justice is has just arisen out of Cephalus's remark that wealth lets a man leave life without owing anything to gods or men.",
   "phases": [
-    {"name": "Cephalus", "speakers": ["socrates", "cephalus"], "length": 9},
-    {"name": "Polemarchus", "speakers": ["socrates", "polemarchus"], "length": 18},
-    {"name": "Thrasymachus", "speakers": ["thrasymachus", "socrates"], "length": 60}
+    {
+      "name": "Cephalus",
+      "speakers": [
+        "socrates",
+        "cephalus"
+      ],
+      "length": 9
+    },
+    {
+      "name": "Polemarchus",
+      "speakers": [
+        "socrates",
+        "polemarchus"
+      ],
+      "length": 18
+    },
+    {
+      "name": "Thrasymachus",
+      "speakers": [
+        "thrasymachus",
+        "socrates"
+      ],
+      "length": 60
+    }
   ]
 }

@@ -2,25 +2,29 @@ import pytest
 
 from symposium import generate as g
 from symposium.dialogue import Dialogue
+from symposium.script import Script
 from tests.conftest import FakeClient
 
 SEED = "SOCRATES: What is justice?\n\nPOLEMARCHUS: Paying debts.\n"
+REPUBLIC = Script.named("republic-1")
 
 
 def test_character_prompt_is_the_system_prompt_section():
-    text = g.character_prompt("socrates")
+    text = g.character_prompt(REPUBLIC, "socrates")
     assert text.startswith("You are Socrates")
     assert "Character Profile" not in text
 
 
 def test_system_prompt_has_preamble_then_character():
-    text = g.system_prompt("thrasymachus")
+    text = g.system_prompt(REPUBLIC, "thrasymachus")
     assert text.index("THE STRANGER") < text.index("You are Thrasymachus")
+    assert text.index("You are Thrasymachus") < text.index("## The scene")
+    assert "house of Cephalus" in text
 
 
 def test_missing_prompt_raises():
     with pytest.raises(g.GenerationError):
-        g.character_prompt("glaucon")
+        g.character_prompt(REPUBLIC, "glaucon")
 
 
 def test_user_content_blocks_and_cache_breakpoint():
@@ -34,7 +38,7 @@ def test_user_content_blocks_and_cache_breakpoint():
 def test_generate_streams_and_cleans_label(fake_client):
     fake_client.text = "Socrates: Is it just, then?"
     seen = []
-    text = g.generate(Dialogue.parse(SEED), "socrates", client=fake_client, on_text=seen.append)
+    text = g.generate(Dialogue.parse(SEED), "socrates", REPUBLIC, client=fake_client, on_text=seen.append)
     assert text == "Is it just, then?"
     assert "".join(seen) == fake_client.text
     call = fake_client.calls[0]
@@ -46,13 +50,13 @@ def test_generate_streams_and_cleans_label(fake_client):
 def test_generate_rejects_early_stop():
     client = FakeClient(stop_reason="max_tokens")
     with pytest.raises(g.GenerationError, match="max_tokens"):
-        g.generate(Dialogue.parse(SEED), "socrates", client=client)
+        g.generate(Dialogue.parse(SEED), "socrates", REPUBLIC, client=client)
 
 
 def test_model_and_effort_from_env(monkeypatch):
     monkeypatch.setenv("SYMPOSIUM_MODEL", "claude-sonnet-5")
     monkeypatch.setenv("SYMPOSIUM_EFFORT", "low")
-    params = g.request_params(Dialogue.parse(SEED), "socrates")
+    params = g.request_params(Dialogue.parse(SEED), "socrates", REPUBLIC)
     assert params["model"] == "claude-sonnet-5"
     assert params["output_config"] == {"effort": "low"}
 
@@ -65,4 +69,9 @@ def test_missing_credentials_is_a_generation_error():
                 raise TypeError("Could not resolve authentication method.")
 
     with pytest.raises(g.GenerationError, match="ANTHROPIC_API_KEY"):
-        g.generate(Dialogue.parse(SEED), "socrates", client=NoAuth())
+        g.generate(Dialogue.parse(SEED), "socrates", REPUBLIC, client=NoAuth())
+
+
+def test_scene_is_optional():
+    script = Script("T", REPUBLIC.phases, dir=REPUBLIC.dir)
+    assert "## The scene" not in g.system_prompt(script, "socrates")

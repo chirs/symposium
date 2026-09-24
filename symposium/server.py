@@ -29,7 +29,7 @@ class InterjectBody(BaseModel):
 def build_app(
     path: Path | None = None,
     name: str = "republic-1",
-    generate: Callable[[Dialogue, str], str] = gen.generate,
+    generate: Callable[[Dialogue, str, Script], str] = gen.generate,
 ) -> FastAPI:
     if path is not None:
         dialogue = Dialogue.load(path)
@@ -70,7 +70,7 @@ def build_app(
         try:
             speaker = (body.speaker or script.next_speaker(dialogue)).lower()
             try:
-                text = generate(dialogue, speaker)
+                text = generate(dialogue, speaker, script)
             except gen.GenerationError as err:
                 raise HTTPException(502, str(err)) from err
             dialogue.append(speaker, text)

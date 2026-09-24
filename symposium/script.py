@@ -24,16 +24,28 @@ class Script:
     title: str
     phases: list[Phase]
     setting: str = ""
+    scene: str = ""
+    dir: Path | None = None  # the dialogue directory: script.json, seed.md, prompts/
 
     @classmethod
     def load(cls, path: Path) -> Script:
         data = json.loads(path.read_text())
         phases = [Phase(p["name"], p["speakers"], p["length"]) for p in data["phases"]]
-        return cls(data["title"], phases, data.get("setting", ""))
+        return cls(
+            data["title"], phases, data.get("setting", ""), data.get("scene", ""), path.parent
+        )
 
     @classmethod
-    def named(cls, name: str) -> Script:
-        return cls.load(DIALOGUES / name / "script.json")
+    def named(cls, name: str, root: Path = DIALOGUES) -> Script:
+        return cls.load(root / name / "script.json")
+
+    @classmethod
+    def discover(cls, root: Path = DIALOGUES) -> list[Script]:
+        return [cls.load(p) for p in sorted(root.glob("*/script.json"))]
+
+    @property
+    def name(self) -> str:
+        return self.dir.name if self.dir else ""
 
     @property
     def characters(self) -> list[str]:

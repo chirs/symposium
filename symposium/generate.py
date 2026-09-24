@@ -9,7 +9,7 @@ from collections.abc import Callable
 import anthropic
 
 from symposium.dialogue import Dialogue
-from symposium.script import ROOT
+from symposium.script import ROOT, Script
 
 PROMPTS = ROOT / "prompts"
 DEFAULT_MODEL = "claude-opus-5"
@@ -24,8 +24,8 @@ def model_id() -> str:
     return os.environ.get("SYMPOSIUM_MODEL", DEFAULT_MODEL)
 
 
-def character_prompt(speaker: str) -> str:
-    path = PROMPTS / f"{speaker}.md"
+def character_prompt(script: Script, speaker: str) -> str:
+    path = script.dir / "prompts" / f"{speaker}.md"
     if not path.exists():
         raise GenerationError(f"no prompt for {speaker!r} at {path}")
     text = path.read_text()
@@ -34,9 +34,11 @@ def character_prompt(speaker: str) -> str:
     return text.split(MARKER, 1)[1].strip()
 
 
-def system_prompt(speaker: str) -> str:
-    preamble = (PROMPTS / "orchestration.md").read_text().strip()
-    return f"{preamble}\n\n---\n\n{character_prompt(speaker)}"
+def system_prompt(script: Script, speaker: str) -> str:
+    parts = [(PROMPTS / "orchestration.md").read_text().strip(), character_prompt(script, speaker)]
+    if script.scene:
+        parts.append(f"## The scene\n\n{script.scene.strip()}")
+    return "\n\n---\n\n".join(parts)
 
 
 def cue(speaker: str) -> str:
@@ -60,11 +62,11 @@ def clean(text: str, speaker: str) -> str:
     return re.sub(rf"^{re.escape(speaker)}\s*:\s*", "", text, count=1, flags=re.IGNORECASE)
 
 
-def request_params(dialogue: Dialogue, speaker: str) -> dict:
+def request_params(dialogue: Dialogue, speaker: str, script: Script) -> dict:
     params = {
         "model": model_id(),
         "max_tokens": 16000,
-        "system": system_prompt(speaker),
+        "system": system_prompt(script, speaker),
         "messages": [{"role": "user", "content": user_content(dialogue, speaker)}],
     }
     if effort := os.environ.get("SYMPOSIUM_EFFORT"):
@@ -75,13 +77,14 @@ def request_params(dialogue: Dialogue, speaker: str) -> dict:
 def generate(
     dialogue: Dialogue,
     speaker: str,
+    script: Script,
     client: anthropic.Anthropic | None = None,
     on_text: Callable[[str], None] | None = None,
 ) -> str:
     """Return the next speech for `speaker`. Streams text to `on_text` as it arrives."""
     client = client or anthropic.Anthropic()
     try:
-        with client.messages.stream(**request_params(dialogue, speaker)) as stream:
+        with client.messages.stream(**request_params(dialogue, speaker, script)) as stream:
             for text in stream.text_stream:
                 if on_text:
                     on_text(text)

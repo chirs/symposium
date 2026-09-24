@@ -10,7 +10,7 @@ from symposium.script import DIALOGUES
 from symposium.server import build_app
 
 
-def fake_generate(dialogue, speaker):
+def fake_generate(dialogue, speaker, script):
     return f"({speaker} speaks)"
 
 
@@ -52,7 +52,7 @@ def test_interject_and_revert(client):
 
 
 def test_generation_error_is_502():
-    def broken(dialogue, speaker):
+    def broken(dialogue, speaker, script):
         raise GenerationError("refusal")
 
     client = TestClient(build_app(generate=broken))

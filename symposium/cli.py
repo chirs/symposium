@@ -32,7 +32,9 @@ def resolve_script(path: Path, name: str | None) -> Script:
 def step(dialogue: Dialogue, script: Script, speaker: str | None, out) -> Exchange:
     speaker = speaker or script.next_speaker(dialogue)
     print(speaker.upper(), file=out)
-    text = generate(dialogue, speaker, on_text=lambda t: print(t, end="", file=out, flush=True))
+    text = generate(
+        dialogue, speaker, script, on_text=lambda t: print(t, end="", file=out, flush=True)
+    )
     print("\n", file=out)
     return dialogue.append(speaker, text)
 
