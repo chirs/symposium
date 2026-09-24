@@ -27,15 +27,17 @@ or in the terminal:
 
 ## Dialogues
 
-| Name | Speakers | Where it starts |
+| Name | Speakers | Text |
 | --- | --- | --- |
-| `republic-1` | Socrates, Cephalus, Polemarchus, Thrasymachus | Cephalus on the blessing of wealth; the question of justice |
-| `euthyphro` | Socrates, Euthyphro | The Porch of the King Archon; Euthyphro's first definition of piety |
-| `crito` | Socrates, Crito | The prison before dawn; the ship from Delos; Crito's first plea |
-| `gorgias` | Socrates, Gorgias, Polus, Callicles | "What is your art?" through "With discourse." |
-| `symposium` | Phaedrus, Pausanias, Eryximachus, Aristophanes, Agathon, Socrates, Alcibiades | Eryximachus proposes speeches in praise of Love |
+| `republic-1` | Socrates, Cephalus, Polemarchus, Thrasymachus (Glaucon, Adeimantus, Cleitophon briefly) | Republic Book I, complete |
+| `euthyphro` | Socrates, Euthyphro | complete |
+| `crito` | Socrates, Crito | complete |
+| `gorgias` | Socrates, Gorgias, Polus, Callicles (Chaerephon briefly) | complete |
+| `symposium` | Phaedrus, Pausanias, Eryximachus, Aristophanes, Agathon, Socrates, Alcibiades | complete, from Aristodemus's arrival at Agathon's |
 
-Each lives in `dialogues/<name>/` as `script.json` (title, setting, scene, turn order), `seed.md` (opening exchanges from the Jowett text, narration removed), and `prompts/<speaker>.md` (a character profile above `# System Prompt`, the prompt itself below). Socrates has a different prompt in each, because he argues differently in each.
+Each lives in `dialogues/<name>/` as `script.json` (title, setting, scene, turn order), `seed.md` (the whole dialogue in script form, from the Jowett text in `corpus/`, with narration turned into bracketed stage directions), and `prompts/<speaker>.md` (a character profile above `# System Prompt`, the prompt itself below). Socrates has a different prompt in each, because he argues differently in each.
+
+You read Plato's text; generation happens only where you leave it: after an interjection as The Stranger, or past the end. `tools/` holds the scripts that made the seeds from the corpus.
 
 ## Commands
 

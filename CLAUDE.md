@@ -4,13 +4,13 @@
 
 A simulator for Platonic dialogues using the Claude API. Each character has a system prompt capturing their argumentative style, and the dialogue builds exchange by exchange. The user can interject as "The Stranger" at any point, and the dialogue continues from there.
 
-Five dialogues so far: Republic I, Euthyphro, Crito, Gorgias, Symposium. Each is a directory under `dialogues/` with its script, seed, and prompts. A Python CLI (`symposium`) steps, generates, interjects, and reverts a plain text file; a FastAPI server exposes every dialogue to a single-page reading view that lets the reader choose one.
+Five dialogues so far: Republic I, Euthyphro, Crito, Gorgias, Symposium, each complete in script form. Each is a directory under `dialogues/` with its script, seed (the whole Jowett text), and prompts. The reader steps through Plato; the model speaks only after an interjection or past the end. A Python CLI (`symposium`) steps, generates, interjects, and reverts a plain text file; a FastAPI server exposes every dialogue to a single-page reading view that lets the reader choose one.
 
 ## Design Principles
 
 - **Character fidelity over features.** The quality of character system prompts is where the project succeeds or fails. Characters must argue in their distinctive styles, not converge into polite agreement.
 - **Interjection without ceremony.** When the user interjects, characters respond to the actual argument without commenting on the divergence. The dialogue continues as though it always included this exchange.
-- **The file is the state.** Anything the engine can do, the user can do by editing the text. Keep the format hand-editable.
+- **The file is the state.** Anything the engine can do, the user can do by editing the text. Keep the format hand-editable. Narration is a bracketed paragraph (a stage direction); it is shown to the reader and the model but is nobody's turn.
 - **Reading view, not chat.** Dark, lamplit, serif; speaker labels as inscriptions; no chat bubbles, no UI chrome competing with the text.
 - **Stepping forward = generating.** Advancing past the last existing exchange triggers API generation for the next speaker's response.
 
@@ -33,13 +33,14 @@ symposium/cli.py        new / show / next / interject / revert / run / serve
 symposium/server.py     build_app(dialogues_dir, generate): /api/dialogues[/{name}[/next|interject|revert|reset]]
 web/index.html          landing list + reading view, vanilla JS
 prompts/orchestration.md  rules shared by every character
-dialogues/<name>/       script.json, seed.md, prompts/<speaker>.md; run*.md is gitignored
+dialogues/<name>/       script.json, seed.md (full text), prompts/<speaker>.md; run*.md is gitignored
+tools/                  one-off converters from corpus/ text to script form (tagged texts, Republic I, Symposium)
 corpus/                 25 Jowett dialogues, plain text
 ```
 
 ## Adding a dialogue
 
-Make `dialogues/<name>/` with `script.json` (title, setting, scene, phases), `seed.md` in script form adapted from `corpus/`, and one prompt per speaker named in the phases, each with a profile above `# System Prompt` and the prompt below. `tests/test_script.py` checks every dialogue directory for completeness. Socrates gets his own prompt per dialogue; do not share one.
+Make `dialogues/<name>/` with `script.json` (title, setting, scene, phases), `seed.md` holding the whole dialogue in script form (for speaker-tagged corpus files, `tools/from_corpus.py` does it; narrated ones need a converter like `tools/republic1.py` and a read-through), and one prompt per speaker named in the phases, each with a profile above `# System Prompt` and the prompt below. `tests/test_script.py` checks every dialogue directory for completeness. Socrates gets his own prompt per dialogue; do not share one.
 
 ## Development
 

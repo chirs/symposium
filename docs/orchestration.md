@@ -12,19 +12,25 @@ SOCRATES: Is not Polemarchus your heir?
 CEPHALUS: To be sure.
 ```
 
-A speech may span paragraphs; it runs until the next label. The user's label is `THE STRANGER`. The file is the state. Edit it by hand whenever you like; the engine re-reads it on every command.
+A speech may span paragraphs; it runs until the next label. The user's label is `THE STRANGER`. A paragraph wrapped in square brackets is a stage direction: it is shown to the reader and sent to the model in brackets, but it is nobody's turn and does not affect the turn order.
+
+```
+[Cephalus goes away laughing to the sacrifices.]
+```
+
+The file is the state. Edit it by hand whenever you like; the engine re-reads it on every command.
 
 ## A dialogue directory
 
 ```
 dialogues/<name>/
   script.json     title, setting, scene, phases
-  seed.md         the opening exchanges, from the Jowett text with narration removed
+  seed.md         the whole dialogue in script form, from the Jowett text; narration becomes directions
   prompts/        one <speaker>.md per character named in the phases
   run.md          the working copy, created from seed.md on first use (gitignored)
 ```
 
-`symposium new <name>` copies the seed to `run.md`; the server does the same on first access. `script.json` carries a `setting` (one line, shown under the title) and a `scene` (a paragraph on who is present, where, and what has just happened), both optional.
+`symposium new <name>` copies the seed to `run.md`; the server does the same on first access. The seed is the complete text, so reading a dialogue is reading Plato; the model only speaks after an interjection or past the end. `tools/from_corpus.py` converts the speaker-tagged corpus files; `tools/republic1.py` and `tools/symposium.py` convert the two narrated ones and record every hand correction. `script.json` carries a `setting` (one line, shown under the title) and a `scene` (a paragraph on who is present, where, and what has just happened), both optional.
 
 ## Turn order
 
