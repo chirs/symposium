@@ -16,6 +16,8 @@ WIDTH = 88
 
 
 def render(e: Exchange) -> str:
+    if e.is_stage:
+        return textwrap.fill(f"[{e.text}]", WIDTH) + "\n"
     paragraphs = [textwrap.fill(p, WIDTH) for p in e.text.split("\n\n")]
     return f"{e.speaker}\n" + "\n\n".join(paragraphs) + "\n"
 

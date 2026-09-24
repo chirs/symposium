@@ -91,3 +91,12 @@ def test_next_without_script_exits(tmp_path, stub_generate):
 
 def test_script_json_is_valid():
     json.loads((DIALOGUES / "republic-1" / "script.json").read_text())
+
+
+def test_show_renders_directions(tmp_path, capsys):
+    f = tmp_path / "x.md"
+    f.write_text("[A pause.]\n\nSOCRATES: Hm.\n")
+    cli.main(["show", str(f)])
+    out = capsys.readouterr().out
+    assert out.startswith("[A pause.]\n")
+    assert "SOCRATES\nHm." in out

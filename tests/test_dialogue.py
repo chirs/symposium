@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from symposium.dialogue import STRANGER, Dialogue, Exchange, format, original_path, parse
+from symposium.dialogue import STAGE, STRANGER, Dialogue, Exchange, format, original_path, parse
 
 SCRIPT = """SOCRATES: Is it so?
 
@@ -94,3 +94,33 @@ def test_save_and_load_with_sidecar(tmp_path: Path):
     loaded.save(path)
     assert not original_path(path).exists()
     assert Dialogue.load(path).format() == SCRIPT
+
+
+STAGED = """[Thrasymachus, who has several times tried to interrupt, bursts in.]
+
+THRASYMACHUS: What folly, Socrates, has taken possession of you all?
+
+[He glares round the room.]
+
+SOCRATES: I was panic-stricken.
+"""
+
+
+def test_stage_directions_round_trip():
+    exchanges = parse(STAGED)
+    assert [e.speaker for e in exchanges] == [STAGE, "THRASYMACHUS", STAGE, "SOCRATES"]
+    assert exchanges[0].is_stage and not exchanges[0].is_scripted
+    assert exchanges[0].text.startswith("Thrasymachus, who")
+    assert exchanges[2].as_text() == "[He glares round the room.]"
+    assert format(exchanges) == STAGED
+
+
+def test_stage_directions_do_not_count_as_turns():
+    d = Dialogue.parse(STAGED + "\n[Silence.]\n")
+    assert d.turn_count == 2
+    assert d.last_speaker == "socrates"
+
+
+def test_text_after_direction_without_label_is_rejected():
+    with pytest.raises(ValueError):
+        parse("[A pause.]\nHe coughs.\n")

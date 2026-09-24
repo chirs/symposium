@@ -51,7 +51,7 @@ def cue(speaker: str) -> str:
 def user_content(dialogue: Dialogue, speaker: str) -> list[dict]:
     """One block per exchange so prompt caching can reuse the growing transcript."""
     blocks: list[dict] = [{"type": "text", "text": "The dialogue so far:"}]
-    blocks += [{"type": "text", "text": f"{e.speaker}: {e.text}"} for e in dialogue.exchanges]
+    blocks += [{"type": "text", "text": e.as_text()} for e in dialogue.exchanges]
     blocks[-1]["cache_control"] = {"type": "ephemeral"}
     blocks.append({"type": "text", "text": cue(speaker)})
     return blocks

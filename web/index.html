@@ -132,6 +132,8 @@
     background: radial-gradient(ellipse 45% 75% at 50% 45%, var(--lamp), transparent 100%);
   }
   .exchange.current .speaker { color: var(--clay-bright); }
+  .exchange.stage { text-align: center; font-style: italic; color: var(--muted); }
+  .exchange.stage.current { color: var(--ink-dim); }
   .exchange.stranger .speaker { color: var(--gold); }
   .exchange p { margin: 0 0 .8em; }
   .exchange p:last-child { margin-bottom: 0; }
@@ -254,11 +256,13 @@
 
   function block(speaker, text, extraClass) {
     const div = document.createElement("div");
-    div.className = "exchange " + (speaker === STRANGER ? "stranger " : "") + (extraClass || "");
-    const label = document.createElement("div");
-    label.className = "speaker display";
-    label.textContent = speaker;
-    div.appendChild(label);
+    div.className = "exchange " + (speaker === STRANGER ? "stranger " : "") + (speaker === "" ? "stage " : "") + (extraClass || "");
+    if (speaker !== "") {
+      const label = document.createElement("div");
+      label.className = "speaker display";
+      label.textContent = speaker;
+      div.appendChild(label);
+    }
     for (const para of text.split(/\n\s*\n/)) {
       const p = document.createElement("p");
       p.textContent = para;
@@ -320,7 +324,8 @@
       box.appendChild(block(e.speaker, e.text, isCurrent ? "current" : ""));
     });
     if (pendingSpeaker) box.appendChild(block(pendingSpeaker, "…", "pending current"));
-    renderGuests(pendingSpeaker || (shown.length ? shown[shown.length - 1].speaker : ""));
+    const lastSpeech = [...shown].reverse().find((e) => e.speaker !== "");
+    renderGuests(pendingSpeaker || (lastSpeech ? lastSpeech.speaker : ""));
     $("position").textContent = `${cursor} of ${state.exchanges.length}`;
     $("back").disabled = busy || cursor <= 0;
     $("forward").disabled = busy;

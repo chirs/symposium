@@ -75,3 +75,9 @@ def test_missing_credentials_is_a_generation_error():
 def test_scene_is_optional():
     script = Script("T", REPUBLIC.phases, dir=REPUBLIC.dir)
     assert "## The scene" not in g.system_prompt(script, "socrates")
+
+
+def test_stage_directions_go_to_the_model_in_brackets():
+    d = Dialogue.parse("[Thrasymachus bursts in.]\n\nSOCRATES: Hm.\n")
+    blocks = g.user_content(d, "thrasymachus")
+    assert blocks[1]["text"] == "[Thrasymachus bursts in.]"
