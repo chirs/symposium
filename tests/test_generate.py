@@ -81,3 +81,15 @@ def test_stage_directions_go_to_the_model_in_brackets():
     d = Dialogue.parse("[Thrasymachus bursts in.]\n\nSOCRATES: Hm.\n")
     blocks = g.user_content(d, "thrasymachus")
     assert blocks[1]["text"] == "[Thrasymachus bursts in.]"
+
+
+def test_sandbox_borrows_prompts_and_prefixes_the_scene(tmp_path):
+    import shutil
+
+    from symposium import sandbox
+
+    shutil.copytree(REPUBLIC.dir, tmp_path / "republic-1", ignore=shutil.ignore_patterns("run*.md"))
+    s = sandbox.create("Box", [("thrasymachus", "republic-1")], "A street", "They meet.", root=tmp_path)
+    text = g.system_prompt(s, "thrasymachus")
+    assert "You are Thrasymachus" in text
+    assert "This is a new conversation" in text and text.index("new conversation") < text.index("They meet.")

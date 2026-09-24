@@ -74,3 +74,9 @@ def test_every_dialogue_is_complete(script: Script):
         assert path.exists(), c
         assert "# System Prompt" in path.read_text(), c
         assert (ROOT / "prompts" / "orchestration.md").exists()
+
+
+def test_prompt_path_defaults_to_the_dialogue_directory():
+    s = Script.named("gorgias")
+    assert s.prompt_path("polus") == s.dir / "prompts" / "polus.md"
+    assert not s.sandbox and s.cast == {}

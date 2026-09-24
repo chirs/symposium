@@ -14,6 +14,10 @@ from symposium.script import ROOT, Script
 PROMPTS = ROOT / "prompts"
 DEFAULT_MODEL = "claude-opus-5"
 MARKER = "# System Prompt"
+SANDBOX_PREFIX = (
+    "This is a new conversation, not the scene of any text. You keep your convictions, your "
+    "manner, and your memory of your own circumstances, but the company and the question are these:"
+)
 
 
 class GenerationError(Exception):
@@ -25,7 +29,7 @@ def model_id() -> str:
 
 
 def character_prompt(script: Script, speaker: str) -> str:
-    path = script.dir / "prompts" / f"{speaker}.md"
+    path = script.prompt_path(speaker)
     if not path.exists():
         raise GenerationError(f"no prompt for {speaker!r} at {path}")
     text = path.read_text()
@@ -36,8 +40,11 @@ def character_prompt(script: Script, speaker: str) -> str:
 
 def system_prompt(script: Script, speaker: str) -> str:
     parts = [(PROMPTS / "orchestration.md").read_text().strip(), character_prompt(script, speaker)]
-    if script.scene:
-        parts.append(f"## The scene\n\n{script.scene.strip()}")
+    scene = script.scene.strip()
+    if script.sandbox:
+        scene = f"{SANDBOX_PREFIX}\n\n{scene}"
+    if scene:
+        parts.append(f"## The scene\n\n{scene}")
     return "\n\n---\n\n".join(parts)
 
 

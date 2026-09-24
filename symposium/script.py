@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from symposium.dialogue import Dialogue
@@ -26,14 +26,27 @@ class Script:
     setting: str = ""
     scene: str = ""
     dir: Path | None = None  # the dialogue directory: script.json, seed.md, prompts/
+    sandbox: bool = False  # a user-made conversation: prompts borrowed, speaker chosen by the director
+    cast: dict[str, str] = field(default_factory=dict)  # speaker -> dialogue whose prompt to use
 
     @classmethod
     def load(cls, path: Path) -> Script:
         data = json.loads(path.read_text())
         phases = [Phase(p["name"], p["speakers"], p["length"]) for p in data["phases"]]
         return cls(
-            data["title"], phases, data.get("setting", ""), data.get("scene", ""), path.parent
+            data["title"],
+            phases,
+            data.get("setting", ""),
+            data.get("scene", ""),
+            path.parent,
+            data.get("sandbox", False),
+            data.get("cast", {}),
         )
+
+    def prompt_path(self, speaker: str) -> Path:
+        if speaker in self.cast:
+            return self.dir.parent / self.cast[speaker] / "prompts" / f"{speaker}.md"
+        return self.dir / "prompts" / f"{speaker}.md"
 
     @classmethod
     def named(cls, name: str, root: Path = DIALOGUES) -> Script:
