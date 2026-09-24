@@ -140,8 +140,10 @@
     const res = await fetch(path, body === undefined
       ? {}
       : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || res.statusText);
+    const raw = await res.text();
+    let data = null;
+    try { data = JSON.parse(raw); } catch (_) { /* not JSON */ }
+    if (!res.ok) throw new Error((data && data.detail) || raw || res.statusText);
     return data;
   }
 
@@ -171,8 +173,7 @@
     $("forward").disabled = busy;
     $("revert").hidden = !state.has_original;
     $("text").disabled = busy;
-    const last = box.lastElementChild;
-    if (last) last.scrollIntoView({ block: "end", behavior: "smooth" });
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
   }
 
   function setState(next) {
