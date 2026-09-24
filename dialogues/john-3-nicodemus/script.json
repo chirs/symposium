@@ -1,0 +1,9 @@
+{
+  "title": "Nicodemus by Night",
+  "collection": "New Testament",
+  "setting": "Jerusalem, at night, during the Passover",
+  "scene": "Jerusalem during the Passover, early in Jesus's ministry. He has just driven the merchants out of the temple and done signs in the city, and many have believed. Nicodemus, a Pharisee and a ruler of the Jews, a member of the council, has come to him by night, so as not to be seen, to find out what he is. Only the two of them are present.",
+  "phases": [
+    {"name": "Night", "speakers": ["nicodemus", "jesus"], "length": 1}
+  ]
+}

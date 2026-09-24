@@ -1,0 +1,9 @@
+{
+  "title": "The Woman at the Well",
+  "collection": "New Testament",
+  "setting": "Jacob’s well at Sychar, in Samaria, about the sixth hour",
+  "scene": "Jesus, leaving Judea for Galilee, has passed through Samaria and sat down tired by Jacob’s well outside the city of Sychar, at noon, while his disciples have gone into the city to buy food. A woman of Samaria has come alone to draw water at the hottest hour. Jews have no dealings with Samaritans; a rabbi does not speak with a woman in public; she has had five husbands. Later the disciples return, and the people of the city come out.",
+  "phases": [
+    {"name": "The well", "speakers": ["samaritan woman", "jesus"], "length": 1}
+  ]
+}
