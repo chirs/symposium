@@ -23,12 +23,13 @@ class Phase:
 class Script:
     title: str
     phases: list[Phase]
+    setting: str = ""
 
     @classmethod
     def load(cls, path: Path) -> Script:
         data = json.loads(path.read_text())
         phases = [Phase(p["name"], p["speakers"], p["length"]) for p in data["phases"]]
-        return cls(data["title"], phases)
+        return cls(data["title"], phases, data.get("setting", ""))
 
     @classmethod
     def named(cls, name: str) -> Script:

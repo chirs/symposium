@@ -23,6 +23,8 @@ def test_index_and_state(client):
     assert "<title>Symposium</title>" in client.get("/").text
     data = client.get("/api/dialogue").json()
     assert data["title"] == "Republic, Book I"
+    assert data["setting"] == "The house of Cephalus, in the Piraeus"
+    assert data["characters"] == ["SOCRATES", "CEPHALUS", "POLEMARCHUS", "THRASYMACHUS"]
     assert len(data["exchanges"]) == 11
     assert data["next_speaker"] == "SOCRATES"
     assert data["has_original"] is False

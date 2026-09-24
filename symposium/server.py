@@ -48,6 +48,8 @@ def build_app(
     def state() -> dict:
         return {
             "title": script.title,
+            "setting": script.setting,
+            "characters": [c.upper() for c in script.characters],
             "exchanges": [{"speaker": e.speaker, "text": e.text} for e in dialogue.exchanges],
             "has_original": dialogue.has_original,
             "next_speaker": script.next_speaker(dialogue).upper(),

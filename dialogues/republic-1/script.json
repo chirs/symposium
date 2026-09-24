@@ -1,5 +1,6 @@
 {
   "title": "Republic, Book I",
+  "setting": "The house of Cephalus, in the Piraeus",
   "phases": [
     {"name": "Cephalus", "speakers": ["socrates", "cephalus"], "length": 9},
     {"name": "Polemarchus", "speakers": ["socrates", "polemarchus"], "length": 18},
