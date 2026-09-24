@@ -1,0 +1,9 @@
+{
+  "title": "Paul at Athens",
+  "collection": "New Testament",
+  "setting": "The Areopagus at Athens",
+  "scene": "Paul of Tarsus, waiting at Athens for Silas and Timothy, has been provoked by a city full of idols into arguing daily in the synagogue and the marketplace. Some Epicurean and Stoic philosophers, who spend their days telling and hearing new things, have taken him up to the Areopagus, the hill of Ares where the old council met, to hear this new teaching. In the text the philosophers speak as a group; here the mockery (‘babbler’, and the mocking at the resurrection) is given to the Epicurean and the curiosity (‘foreign deities’, ‘what is this new teaching?’, ‘we want to hear you again’) to the Stoic. Dionysius the Areopagite and a woman named Damaris are among the listeners.",
+  "phases": [
+    {"name": "Areopagus", "speakers": ["paul", "stoic", "epicurean"], "length": 1}
+  ]
+}

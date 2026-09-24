@@ -1,0 +1,9 @@
+{
+  "title": "Jesus before Pilate",
+  "collection": "New Testament",
+  "setting": "The Praetorium in Jerusalem, early on the Preparation Day of the Passover",
+  "scene": "Early morning on the day before the Passover. The chief priests have tried Jesus overnight before Caiaphas and brought him to the Praetorium, the Roman governor’s residence, which they will not enter for fear of defilement before the feast; Pilate must go out to them and come back in to the prisoner. Pilate is the Roman prefect of Judea, answerable to Tiberius, contemptuous of the priests and uneasy about the prisoner. The chief priests want a Roman execution and have a lever: a man who calls himself a king is Caesar’s rival, and a governor who releases him is not Caesar’s friend. A crowd has gathered. Rome executes only for sedition, so the charge must be made political.",
+  "phases": [
+    {"name": "Trial", "speakers": ["pilate", "jesus"], "length": 1}
+  ]
+}
