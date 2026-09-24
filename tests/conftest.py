@@ -42,3 +42,19 @@ class FakeClient:
 @pytest.fixture
 def fake_client():
     return FakeClient()
+
+
+class FakeDirector:
+    """Stands in for anthropic.Anthropic for the director's single non-streaming call."""
+
+    def __init__(self, text="CALLICLES", error=None):
+        self.calls = []
+        self.text = text
+        self.error = error
+        self.messages = SimpleNamespace(create=self._create)
+
+    def _create(self, **kwargs):
+        self.calls.append(kwargs)
+        if self.error:
+            raise self.error
+        return SimpleNamespace(content=[SimpleNamespace(type="text", text=self.text)])
