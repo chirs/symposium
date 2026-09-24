@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Symposium</title>
+<style>
+  :root {
+    --bg: #fbf8f1;
+    --ink: #24211c;
+    --muted: #8b8376;
+    --rule: #e6dfd2;
+    --stranger: #35556e;
+    --accent: #7d2f1f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17161a;
+      --ink: #e6e1d8;
+      --muted: #8d877c;
+      --rule: #2c2a30;
+      --stranger: #8fb2cf;
+      --accent: #d08a72;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--bg);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    font-size: 1.15rem;
+    line-height: 1.7;
+  }
+  main {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 4rem 1.25rem 14rem;
+  }
+  header {
+    margin-bottom: 3.5rem;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 1rem;
+  }
+  header h1 {
+    font-weight: normal;
+    font-size: 1rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  .exchange { margin: 0 0 2.5rem; }
+  .speaker {
+    font-variant: small-caps;
+    letter-spacing: .1em;
+    font-size: .9rem;
+    color: var(--muted);
+    margin-bottom: .3rem;
+  }
+  .stranger .speaker { color: var(--stranger); }
+  .exchange p { margin: 0 0 .9em; }
+  .exchange p:last-child { margin-bottom: 0; }
+  .pending { color: var(--muted); font-style: italic; }
+  #status { color: var(--accent); font-size: .95rem; min-height: 1.5em; }
+  footer {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    background: var(--bg);
+    border-top: 1px solid var(--rule);
+    padding: 1rem 1.25rem 1.25rem;
+  }
+  .bar { max-width: 42rem; margin: 0 auto; }
+  .controls {
+    display: flex;
+    gap: .5rem;
+    align-items: baseline;
+    font-size: .9rem;
+    color: var(--muted);
+    margin-bottom: .6rem;
+    flex-wrap: wrap;
+  }
+  .controls .spacer { flex: 1; }
+  button {
+    font: inherit;
+    color: var(--ink);
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: .2rem .7rem;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button:disabled { opacity: .4; cursor: default; }
+  #revert { color: var(--accent); }
+  #revert[hidden] { display: none; }
+  form { display: flex; gap: .5rem; }
+  input {
+    flex: 1;
+    font: inherit;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--muted);
+    padding: .3rem 0;
+    outline: none;
+  }
+  input::placeholder { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+  <header><h1 id="title">Symposium</h1></header>
+  <div id="dialogue"></div>
+  <div id="status"></div>
+</main>
+<footer>
+  <div class="bar">
+    <div class="controls">
+      <button id="back" title="Left arrow">&larr; Back</button>
+      <button id="forward" title="Right arrow">Continue &rarr;</button>
+      <span id="position"></span>
+      <span class="spacer"></span>
+      <button id="revert" hidden>Return to original</button>
+    </div>
+    <form id="say">
+      <input id="text" autocomplete="off" placeholder="Speak as The Stranger at this point…">
+      <button type="submit">Say</button>
+    </form>
+  </div>
+</footer>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let state = { title: "", exchanges: [], has_original: false, next_speaker: "" };
+  let cursor = 1;
+  let busy = false;
+
+  async function api(path, body) {
+    const res = await fetch(path, body === undefined
+      ? {}
+      : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.statusText);
+    return data;
+  }
+
+  function block(speaker, text, extraClass) {
+    const div = document.createElement("div");
+    div.className = "exchange " + (speaker === "THE STRANGER" ? "stranger " : "") + (extraClass || "");
+    const label = document.createElement("div");
+    label.className = "speaker";
+    label.textContent = speaker;
+    div.appendChild(label);
+    for (const para of text.split(/\n\s*\n/)) {
+      const p = document.createElement("p");
+      p.textContent = para;
+      div.appendChild(p);
+    }
+    return div;
+  }
+
+  function render(pendingSpeaker) {
+    $("title").textContent = state.title || "Symposium";
+    const box = $("dialogue");
+    box.replaceChildren();
+    state.exchanges.slice(0, cursor).forEach((e) => box.appendChild(block(e.speaker, e.text)));
+    if (pendingSpeaker) box.appendChild(block(pendingSpeaker, "…", "pending"));
+    $("position").textContent = `${cursor} / ${state.exchanges.length}`;
+    $("back").disabled = busy || cursor <= 0;
+    $("forward").disabled = busy;
+    $("revert").hidden = !state.has_original;
+    $("text").disabled = busy;
+    const last = box.lastElementChild;
+    if (last) last.scrollIntoView({ block: "end", behavior: "smooth" });
+  }
+
+  function setState(next) {
+    state = next;
+    cursor = Math.min(cursor, state.exchanges.length);
+  }
+
+  function fail(err) {
+    $("status").textContent = err.message;
+  }
+
+  async function forward() {
+    if (busy) return;
+    $("status").textContent = "";
+    if (cursor < state.exchanges.length) {
+      cursor += 1;
+      render();
+      return;
+    }
+    busy = true;
+    render(state.next_speaker);
+    try {
+      setState(await api("/api/next", {}));
+      cursor = state.exchanges.length;
+    } catch (err) {
+      fail(err);
+    } finally {
+      busy = false;
+      render();
+    }
+  }
+
+  function back() {
+    if (busy || cursor <= 0) return;
+    cursor -= 1;
+    render();
+  }
+
+  async function interject(text) {
+    if (busy) return;
+    $("status").textContent = "";
+    try {
+      setState(await api("/api/interject", { text, at: cursor }));
+      cursor = state.exchanges.length;
+      render();
+      await forward();
+    } catch (err) {
+      fail(err);
+      render();
+    }
+  }
+
+  async function revert() {
+    if (busy) return;
+    try {
+      setState(await api("/api/revert", {}));
+      render();
+    } catch (err) {
+      fail(err);
+    }
+  }
+
+  $("forward").addEventListener("click", forward);
+  $("back").addEventListener("click", back);
+  $("revert").addEventListener("click", revert);
+  $("say").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const text = $("text").value.trim();
+    if (!text) return;
+    $("text").value = "";
+    interject(text);
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.target === $("text")) return;
+    if (ev.key === "ArrowRight") { ev.preventDefault(); forward(); }
+    if (ev.key === "ArrowLeft") { ev.preventDefault(); back(); }
+  });
+
+  api("/api/dialogue").then((data) => { setState(data); render(); }).catch(fail);
+</script>
+</body>
+</html>
