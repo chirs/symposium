@@ -48,7 +48,7 @@ Because the rule keys off the last speaker rather than an index, hand edits and 
 
 One API call per exchange (`symposium/generate.py`):
 
-- **System prompt**: `prompts/orchestration.md`, the rules shared by every character; then the `# System Prompt` section of the speaker's prompt (the profile above that heading is documentation and is not sent); then the script's `scene` under a `## The scene` heading. The prompt is looked up in order: a sandbox cast entry's source dialogue, the dialogue's own `prompts/`, then the shared pool `prompts/characters/` for characters who recur across dialogues.
+- **System prompt**: `prompts/orchestration.md`, the rules shared by every character; then the `# System Prompt` section of the speaker's prompt (the profile above that heading is documentation and is not sent); then the script's `scene` under a `## The scene` heading. The prompt is looked up in order: a sandbox cast or guest entry's source (`shared` or another dialogue), the dialogue's own `prompts/`, then the shared pool `prompts/characters/` for characters who recur across dialogues.
 - **User message**: the full transcript, one content block per exchange, then a cue naming the speaker and asking for the words alone. A cache breakpoint sits on the last transcript block so a character's later turns reuse the cached prefix.
 - **Model**: `SYMPOSIUM_MODEL`, default `claude-opus-5`, with the model's default adaptive thinking. `SYMPOSIUM_EFFORT` sets `output_config.effort` when present.
 - The response streams to the terminal as it arrives. Any stop reason other than `end_turn` is an error and nothing is appended. A leading speaker label, if the model adds one anyway, is stripped.
@@ -81,6 +81,12 @@ POST /api/dialogues/{name}/reset
 ```
 
 and `web/index.html`, which shows a list of dialogues until one is chosen (`#name` in the URL), then the reading view with the same cursor model as the CLI.
+
+## Guests
+
+Any character can be brought into a run of any dialogue. `guests.invite` inserts a stage direction ("Jesus has come in and joined the company.") after the reader's position, discards what follows (snapshotting the original exactly as an interjection does), and records the guest and the source of their prompt in `run.guests.json` beside the run file. From then on `Script.speakers` is the cast plus the guests, the guest's system prompt gets a note that they were not written into this scene, and the dialogue is *directed*: the director picks who speaks next, since the script no longer describes the room. Revert and start over clear the guests. Routes: `POST /api/dialogues/{name}/guests {speaker, dialogue, at}`; CLI `symposium invite FILE speaker@dialogue --at N`.
+
+`GET /api/characters/{source}/{speaker}` returns a character's profile (the documentation above `# System Prompt`) and prompt; the page renders these at `#personae`.
 
 ## Sandboxes
 

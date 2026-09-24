@@ -53,6 +53,12 @@ Each lives in `dialogues/<name>/` as `script.json` (title, collection, setting, 
 
 You read Plato's text; generation happens only where you leave it: after an interjection as The Stranger, or past the end. `tools/` holds the scripts that made the seeds from the corpus.
 
+## Bringing someone in
+
+Any character can be invited into any dialogue at the point you have read to: Jesus into Agathon's symposium, Callicles into the Praetorium. "Invite" in the reading view lists everyone not already present; bringing someone in inserts a stage direction announcing them, discards what followed (the original is kept, as with an interjection), and hands the choice of who speaks next to the director, since the script no longer describes the room. Tap a name in the guest strip to make anyone speak. "Return to the original" and "Start over" clear the guests. From the terminal: `symposium invite FILE jesus@shared --at N`. Guests are recorded in `run.guests.json` beside the run file.
+
+The landing page also links to a dramatis personae: every character, with the profile that sits above each system prompt, and the prompt itself under a fold.
+
 ## A conversation of your own
 
 The landing page ends with a form: pick any characters from any dialogue (Socrates comes in five versions, one per dialogue), give the company a setting, a scene paragraph, and optionally an opening question that The Stranger puts to them, and begin. A small model call decides who speaks next after each exchange, since there is no script; clicking a name in the guest strip makes that character answer instead. Sandboxes live in `dialogues/sandbox-<slug>/` (gitignored), work exactly like the fixed dialogues, and can be removed from the landing page.
@@ -80,6 +86,7 @@ From the terminal:
 | `symposium interject FILE "text" [--at N]` | speak as The Stranger after exchange N; discard the rest |
 | `symposium revert FILE` | return to the pre-interjection path |
 | `symposium run FILE` | interactive: Enter steps or generates, typed text interjects |
+| `symposium invite FILE speaker@dialogue [--at N]` | bring a character into this run; the rest is discarded |
 | `symposium characters` | every character and the dialogue it comes from |
 | `symposium sandbox TITLE --cast ... --setting ... --scene ... [--opening ...]` | start a conversation of your own |
 

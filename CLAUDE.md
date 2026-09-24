@@ -21,6 +21,7 @@ Ten dialogues so far in two collections: Plato (Republic I, Euthyphro, Crito, Go
 - Turn order is scripted per dialogue in `script.json` phases, not model-driven. The Stranger's lines never consume a turn. Symposium uses one phase per encomium.
 - Branching: an interjection discards everything after it. The first divergence snapshots the file to `<file>.original.md`; revert restores it. Start over copies the seed back.
 - Prompt lookup: a sandbox cast entry, else the dialogue's own `prompts/`, else the shared pool `prompts/characters/` (Jesus lives there so he is one character everywhere). `collection` in `script.json` groups the landing page.
+- Guests: `symposium/guests.py` records characters invited into a run in `run.guests.json` next to it; inviting inserts a direction at the cursor and diverges like an interjection; `Script.guests` feeds `prompt_path` and `speakers`; `Script.directed` (sandbox or guests) switches speaker choice to the director. Revert and reset clear guests.
 - Sandboxes (`dialogues/sandbox-*/`, gitignored, made from the page or `symposium sandbox`) borrow prompts through a `cast` map in their script and have no turn order: `symposium/director.py` asks `SYMPOSIUM_DIRECTOR_MODEL` (default `claude-haiku-4-5`) who speaks next, with round-robin as the fallback. Their scene is prefixed with a note that this is a new conversation, not the scene of any text.
 
 Full spec: `docs/orchestration.md`.
@@ -31,11 +32,12 @@ Full spec: `docs/orchestration.md`.
 symposium/dialogue.py   exchange parsing/formatting, Dialogue with interject/revert, file + sidecar I/O
 symposium/script.py     Script (title, setting, scene, phases, dir), next_speaker, discover()
 symposium/generate.py   system prompt assembly, request params, streaming call
-symposium/sandbox.py    catalog of characters, create/remove sandbox directories
+symposium/sandbox.py    catalog of characters, profile(), create/remove sandbox directories
+symposium/guests.py     invite a character into a run; run.guests.json
 symposium/director.py   choose_speaker: script order, or a small model call for sandboxes
-symposium/cli.py        new / show / next / interject / revert / run / characters / sandbox / serve
-symposium/server.py     build_app(dialogues_dir, generate, choose): /api/dialogues[/{name}[/next|interject|revert|reset]], /api/characters, /api/sandboxes
-web/index.html          landing list + reading view, vanilla JS
+symposium/cli.py        new / show / next / interject / invite / revert / run / characters / sandbox / serve
+symposium/server.py     build_app(dialogues_dir, generate, choose): /api/dialogues[/{name}[/next|interject|guests|revert|reset]], /api/characters[/{source}/{speaker}], /api/sandboxes
+web/index.html          landing (collections, sandboxes, maker), reading view (invite panel, guest tap), #personae
 prompts/orchestration.md  rules shared by every character; prompts/director.md picks the next speaker
 prompts/characters/     shared pool for characters who recur across dialogues (jesus.md)
 corpus/nt/              World English Bible chapters, fetched with tools/fetch_web.py
