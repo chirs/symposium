@@ -1,0 +1,8 @@
+{
+  "title": "Crito",
+  "setting": "The prison of Socrates, Athens, before dawn",
+  "scene": "Socrates has been condemned to death and has been in prison for a month while the sacred ship was away at Delos; no execution can take place until it returns. It has been sighted at Sunium and will arrive today, so Socrates is to die tomorrow. Crito, his oldest friend, wealthy and practical, has bribed the gaoler to be let in before dawn. He and other friends have money ready and a plan: Socrates can be out of Athens tonight, with a welcome waiting in Thessaly. Crito has come to persuade him. Only the two of them are present; the gaoler is outside.",
+  "phases": [
+    {"name": "Escape", "speakers": ["crito", "socrates"], "length": 1}
+  ]
+}
