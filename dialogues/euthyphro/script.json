@@ -1,0 +1,8 @@
+{
+  "title": "Euthyphro",
+  "setting": "The Porch of the King Archon, Athens",
+  "scene": "Morning, before the court of the King Archon. Socrates is here because Meletus has indicted him for impiety: for inventing new gods and corrupting the young. Euthyphro, a seer who takes himself for an authority on divine matters, is here to prosecute his own father for the death of a hired labourer who killed a household slave; the father bound the man and left him in a ditch while sending to Athens to ask what should be done, and the man died. Euthyphro's family say a son who prosecutes his father is himself impious. Socrates, professing to need a teacher in piety before his own trial, has asked Euthyphro to tell him what piety is. Only the two of them are speaking; passers-by come and go.",
+  "phases": [
+    {"name": "Piety", "speakers": ["socrates", "euthyphro"], "length": 1}
+  ]
+}
