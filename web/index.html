@@ -151,6 +151,55 @@
   .cast-pick .pick:hover { color: var(--ink); }
   .maker .actions { margin-top: 1.4rem; display: flex; gap: .8rem; align-items: baseline; }
   .guests li.speaker-tap { cursor: pointer; }
+  .panel {
+    display: flex;
+    gap: .75rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin: 0 0 .8rem;
+    font-size: .95rem;
+    color: var(--muted);
+  }
+  .panel select {
+    font: inherit;
+    color: var(--ink);
+    background: var(--ground);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: .25rem .5rem;
+    max-width: 100%;
+  }
+  .personae .group { margin: 2rem 0 .6rem; }
+  .personae .name-btn {
+    display: inline-block;
+    margin: 0 .6rem .6rem 0;
+    font-size: .8rem;
+  }
+  .personae .name-btn.open { color: var(--gold); border-color: var(--gold); }
+  .profile {
+    margin: .5rem 0 2rem;
+    padding: 1.2rem 1.5rem;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    color: var(--ink-dim);
+  }
+  .profile h3 {
+    font-family: Cinzel, Georgia, serif;
+    font-weight: 400;
+    font-size: .78rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--clay);
+    margin: 1.4rem 0 .5rem;
+  }
+  .profile h3:first-child { margin-top: 0; }
+  .profile p { margin: 0 0 .8em; }
+  .profile ul { padding-left: 1.2rem; margin: 0 0 .8em; }
+  .profile li { margin-bottom: .4em; }
+  .profile strong { color: var(--ink); font-weight: 600; }
+  .profile details { margin-top: 1.2rem; }
+  .profile summary { cursor: pointer; font-size: .72rem; color: var(--muted); }
+  .profile summary:hover { color: var(--clay-bright); }
   .guests li.speaker-tap:hover { color: var(--gold); }
 
   .exchange {
@@ -244,13 +293,14 @@
 <body>
 <main>
   <header>
-    <p class="nav display"><a href="#" id="all" hidden>&larr; Dialogues</a></p>
+    <p class="nav display"><a href="#" id="all" hidden>&larr; Dialogues</a><a href="#personae" id="to-personae" hidden>Dramatis personae</a></p>
     <h1 id="title" class="display">Symposium</h1>
     <p id="setting" class="setting"></p>
     <div class="meander"></div>
     <ul id="guests" class="guests display"></ul>
   </header>
   <div id="landing"></div>
+  <div id="personae" class="personae" hidden></div>
   <div id="maker" hidden>
     <p class="section display">A conversation of your own</p>
     <form class="maker" id="make">
@@ -281,8 +331,14 @@
       <button id="forward" title="Right arrow">Continue &rarr;</button>
       <span id="position"></span>
       <span class="spacer"></span>
+      <button id="invite">Invite</button>
       <button id="revert" hidden>Return to the original</button>
       <button id="reset">Start over</button>
+    </div>
+    <div class="panel" id="invite-panel" hidden>
+      <span class="display" style="font-size:.68rem">Bring in</span>
+      <select id="invite-who"></select>
+      <button id="invite-go">at this point</button>
     </div>
     <form id="say">
       <span class="you display">The Stranger</span>
@@ -404,8 +460,138 @@
     $("maker").hidden = false;
   }
 
+  function esc(str) {
+    return str.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  }
+
+  function inline(str) {
+    return esc(str).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  }
+
+  function markdown(text) {
+    const out = [];
+    let para = [];
+    let list = null;
+    const flush = () => { if (para.length) { out.push(`<p>${inline(para.join(" "))}</p>`); para = []; } };
+    const endList = () => { if (list) { out.push(`<ul>${list.join("")}</ul>`); list = null; } };
+    for (const raw of text.split("\n")) {
+      const line = raw.trim();
+      if (!line || line === "---") { flush(); endList(); continue; }
+      if (line.startsWith("## ") || line.startsWith("# ")) {
+        flush(); endList();
+        out.push(`<h3>${inline(line.replace(/^#+\s*/, ""))}</h3>`);
+      } else if (line.startsWith("- ")) {
+        flush();
+        list = list || [];
+        list.push(`<li>${inline(line.slice(2))}</li>`);
+      } else {
+        para.push(line);
+      }
+    }
+    flush(); endList();
+    return out.join("");
+  }
+
+  async function renderPersonae() {
+    $("all").hidden = false;
+    $("to-personae").hidden = true;
+    $("title").textContent = "Dramatis personae";
+    $("setting").textContent = "Who may be brought to the table";
+    $("guests").replaceChildren();
+    $("dialogue").replaceChildren();
+    $("landing").replaceChildren();
+    $("maker").hidden = true;
+    $("status").textContent = "";
+    document.querySelector("footer").hidden = true;
+    const box = $("personae");
+    box.replaceChildren();
+    box.hidden = false;
+    const rows = await api("/api/characters");
+    const order = ["Everywhere", ...new Set(rows.map((r) => r.collection).filter((c) => c !== "Everywhere"))];
+    for (const collection of order) {
+      const mine = rows.filter((r) => r.collection === collection);
+      if (!mine.length) continue;
+      const h = document.createElement("p");
+      h.className = "section display group";
+      h.textContent = collection;
+      box.appendChild(h);
+      const byTitle = new Map();
+      for (const r of mine) byTitle.set(r.title, [...(byTitle.get(r.title) || []), r]);
+      for (const [title, people] of byTitle) {
+        if (title !== "Shared") {
+          const t = document.createElement("div");
+          t.className = "cast display";
+          t.style.margin = "1rem 0 .5rem";
+          t.style.color = "var(--clay)";
+          t.style.fontSize = ".68rem";
+          t.textContent = title;
+          box.appendChild(t);
+        }
+        const holder = document.createElement("div");
+        for (const r of people) {
+          const b = document.createElement("button");
+          b.className = "name-btn display";
+          b.textContent = r.speaker.charAt(0).toUpperCase() + r.speaker.slice(1);
+          b.addEventListener("click", async () => {
+            const open = holder.querySelector(`.profile[data-key="${r.dialogue}/${r.speaker}"]`);
+            if (open) { open.remove(); b.classList.remove("open"); return; }
+            const found = await api(`/api/characters/${encodeURIComponent(r.dialogue)}/${encodeURIComponent(r.speaker)}`);
+            const card = document.createElement("div");
+            card.className = "profile";
+            card.dataset.key = `${r.dialogue}/${r.speaker}`;
+            card.innerHTML = markdown(found.profile) +
+              `<details><summary class="display">The prompt</summary>${markdown(found.prompt)}</details>`;
+            b.classList.add("open");
+            holder.appendChild(card);
+            card.scrollIntoView({ block: "nearest" });
+          });
+          holder.appendChild(b);
+        }
+        box.appendChild(holder);
+      }
+    }
+    window.scrollTo(0, 0);
+  }
+
+  async function fillInvite() {
+    const present = new Set((state.characters || []).map((c) => c.toLowerCase()));
+    const sel = $("invite-who");
+    sel.replaceChildren();
+    let group = null;
+    for (const row of await api("/api/characters")) {
+      if (present.has(row.speaker)) continue;
+      if (row.title !== group) {
+        group = row.title;
+        const og = document.createElement("optgroup");
+        og.label = row.title;
+        sel.appendChild(og);
+      }
+      const opt = document.createElement("option");
+      opt.value = `${row.speaker}@${row.dialogue}`;
+      opt.textContent = row.speaker.charAt(0).toUpperCase() + row.speaker.slice(1);
+      sel.lastElementChild.appendChild(opt);
+    }
+  }
+
+  async function inviteGuest() {
+    if (busy || !current) return;
+    const [speaker, dialogue] = $("invite-who").value.split("@");
+    if (!speaker) return;
+    $("status").textContent = "";
+    try {
+      setState(await api(`${base()}/guests`, { speaker, dialogue, at: cursor }));
+      cursor = state.exchanges.length;
+      $("invite-panel").hidden = true;
+      render();
+    } catch (err) {
+      fail(err);
+    }
+  }
+
   function renderLanding(dialogues) {
     $("all").hidden = true;
+    $("to-personae").hidden = false;
+    $("personae").hidden = true;
     $("title").textContent = "Symposium";
     $("setting").textContent = "Choose an evening";
     $("guests").replaceChildren();
@@ -442,6 +628,8 @@
 
   function render(pendingSpeaker) {
     $("all").hidden = false;
+    $("to-personae").hidden = true;
+    $("personae").hidden = true;
     $("landing").replaceChildren();
     $("maker").hidden = true;
     document.querySelector("footer").hidden = false;
@@ -462,6 +650,7 @@
     $("forward").disabled = busy;
     $("revert").hidden = !state.has_original;
     $("reset").disabled = busy;
+    $("invite").disabled = busy;
     $("reset").textContent = "Start over";
     $("reset").classList.remove("armed");
     $("text").disabled = busy;
@@ -554,10 +743,16 @@
 
   async function route() {
     const name = decodeURIComponent(location.hash.slice(1));
+    $("invite-panel").hidden = true;
     try {
       if (!name) {
         current = null;
         renderLanding(await api("/api/dialogues"));
+        return;
+      }
+      if (name === "personae") {
+        current = null;
+        await renderPersonae();
         return;
       }
       if (name !== current) cursor = 1;
@@ -591,6 +786,14 @@
   $("back").addEventListener("click", back);
   $("revert").addEventListener("click", revert);
   $("reset").addEventListener("click", reset);
+  $("invite").addEventListener("click", async () => {
+    const panel = $("invite-panel");
+    if (panel.hidden) {
+      try { await fillInvite(); } catch (err) { fail(err); return; }
+    }
+    panel.hidden = !panel.hidden;
+  });
+  $("invite-go").addEventListener("click", inviteGuest);
   $("say").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const text = $("text").value.trim();

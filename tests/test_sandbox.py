@@ -20,7 +20,8 @@ def test_catalog_lists_every_prompt_with_its_dialogue():
     assert {r["dialogue"] for r in rows if r["speaker"] == "socrates"} == {
         "republic-1", "euthyphro", "crito", "gorgias", "symposium"
     }
-    assert {"speaker": "callicles", "dialogue": "gorgias", "title": "Gorgias"} in rows
+    assert {"speaker": "callicles", "dialogue": "gorgias", "title": "Gorgias", "collection": "Plato"} in rows
+    assert {"speaker": "jesus", "dialogue": "shared", "title": "Shared", "collection": "Everywhere"} in rows
 
 
 def test_create_writes_script_and_seed(root):
@@ -79,8 +80,18 @@ def test_shared_pool_in_catalog_and_cast(root, monkeypatch):
     shared.mkdir()
     (shared / "alpha.md").write_text("# System Prompt\n\nYou are Alpha.\n")
     monkeypatch.setattr(script_module, "SHARED", shared)
-    assert {"speaker": "alpha", "dialogue": "shared", "title": "Shared"} in sandbox.catalog(root)
+    assert any(r["speaker"] == "alpha" and r["dialogue"] == "shared" for r in sandbox.catalog(root))
     s = sandbox.create("Mixed", [("alpha", "shared"), ("polus", "gorgias")], "s", "c", root=root)
     assert s.prompt_path("alpha") == shared / "alpha.md"
     with pytest.raises(ValueError, match="no prompt"):
         sandbox.create("Bad", [("polus", "shared")], "s", "c", root=root)
+
+
+def test_profile_splits_documentation_from_prompt():
+    found = sandbox.profile("callicles", "gorgias")
+    assert found["title"] == "Gorgias"
+    assert found["profile"].startswith("## Philosophical Position")
+    assert "# System Prompt" not in found["profile"] and "You are Callicles" not in found["profile"]
+    assert found["prompt"].startswith("You are Callicles")
+    assert sandbox.profile("jesus", "shared")["title"] == "Everywhere"
+    assert sandbox.profile("nobody", "gorgias") is None

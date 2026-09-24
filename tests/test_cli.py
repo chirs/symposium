@@ -122,3 +122,17 @@ def test_sandbox_command_creates_a_run(tmp_path, monkeypatch, capsys, stub_gener
     assert Dialogue.load(run).exchanges[-1].speaker == "SOCRATES"
     with pytest.raises(SystemExit):
         cli.main(["sandbox", "X", "--cast", "socrates", "--setting", "s", "--scene", "c"])
+
+
+def test_invite_command(run_file, stub_generate, capsys):
+    cli.main(["new", "republic-1", str(run_file)])
+    cli.main(["invite", str(run_file), "jesus@shared", "--at", "3"])
+    out = capsys.readouterr().out
+    assert "[Jesus has come in and joined the company.]" in out
+    d = Dialogue.load(run_file)
+    assert len(d.exchanges) == 4 and d.has_original
+    assert (run_file.parent / "run.guests.json").exists()
+    with pytest.raises(SystemExit):
+        cli.main(["invite", str(run_file), "jesus@shared"])
+    cli.main(["revert", str(run_file)])
+    assert not (run_file.parent / "run.guests.json").exists()

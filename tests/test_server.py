@@ -112,7 +112,7 @@ def test_characters_and_sandbox_lifecycle(root):
 
     client = TestClient(build_app(dialogues_dir=root, generate=fake_generate, choose=choose))
     rows = client.get("/api/characters").json()
-    assert {"speaker": "polemarchus", "dialogue": "republic-1", "title": "Republic, Book I"} in rows
+    assert {"speaker": "polemarchus", "dialogue": "republic-1", "title": "Republic, Book I", "collection": "Plato"} in rows
     assert all(not r["dialogue"].startswith("sandbox") for r in rows)
 
     body = {"title": "Late Night", "cast": [{"speaker": "socrates", "dialogue": "republic-1"}, {"speaker": "polemarchus", "dialogue": "republic-1"}],
@@ -136,3 +136,38 @@ def test_characters_and_sandbox_lifecycle(root):
     assert client.delete("/api/dialogues/sandbox-late-night").json() == {"removed": "sandbox-late-night"}
     assert not (root / "sandbox-late-night").exists()
     assert client.get("/api/dialogues/sandbox-late-night").status_code == 404
+
+
+def test_invite_guest_then_revert(root):
+    chosen = []
+
+    def choose(dialogue, script):
+        chosen.append(list(script.speakers))
+        return "jesus"
+
+    client = TestClient(build_app(dialogues_dir=root, generate=fake_generate, choose=choose))
+    base = "/api/dialogues/republic-1"
+    assert client.get(base).json()["guests"] == []
+    res = client.post(f"{base}/guests", json={"speaker": "jesus", "dialogue": "shared", "at": 4})
+    data = res.json()
+    assert res.status_code == 200
+    assert data["guests"] == ["JESUS"] and data["characters"][-1] == "JESUS"
+    assert data["exchanges"][-1] == {"speaker": "", "text": "Jesus has come in and joined the company."}
+    assert len(data["exchanges"]) == 5 and data["has_original"] and data["next_speaker"] == ""
+    assert (root / "republic-1" / "run.guests.json").exists()
+    assert client.post(f"{base}/guests", json={"speaker": "jesus", "dialogue": "shared"}).status_code == 400
+    assert client.post(f"{base}/guests", json={"speaker": "glaucon", "dialogue": "republic-1"}).status_code == 400
+
+    data = client.post(f"{base}/next", json={}).json()
+    assert data["exchanges"][-1]["speaker"] == "JESUS" and chosen[-1][-1] == "jesus"
+
+    data = client.post(f"{base}/revert").json()
+    assert data["guests"] == [] and data["next_speaker"] == "THRASYMACHUS"
+    assert not (root / "republic-1" / "run.guests.json").exists()
+
+
+def test_character_detail(client):
+    found = client.get("/api/characters/republic-1/thrasymachus").json()
+    assert found["title"] == "Republic, Book I" and "You are Thrasymachus" in found["prompt"]
+    assert "# System Prompt" not in found["profile"]
+    assert client.get("/api/characters/republic-1/nobody").status_code == 404

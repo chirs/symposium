@@ -25,10 +25,27 @@ def catalog(root: Path | None = None) -> list[dict]:
         if s.sandbox:
             continue
         for p in sorted((s.dir / "prompts").glob("*.md")):
-            out.append({"speaker": p.stem, "dialogue": s.name, "title": s.title})
+            out.append({"speaker": p.stem, "dialogue": s.name, "title": s.title, "collection": s.collection})
     for p in sorted(script_module.SHARED.glob("*.md")):
-        out.append({"speaker": p.stem, "dialogue": "shared", "title": "Shared"})
+        out.append({"speaker": p.stem, "dialogue": "shared", "title": "Shared", "collection": "Everywhere"})
     return out
+
+
+def profile(speaker: str, source: str, root: Path | None = None) -> dict | None:
+    """A character's profile (the documentation above the system prompt) and the prompt itself."""
+    root = root or DIALOGUES
+    path = source_prompt(root, speaker, source)
+    if not path.exists():
+        return None
+    text = path.read_text()
+    marker = "# System Prompt"
+    head, _, prompt = text.partition(marker)
+    lines = head.strip().splitlines()
+    if lines and lines[0].startswith("# "):
+        lines = lines[1:]
+    doc = "\n".join(lines).strip().removesuffix("---").strip()
+    title = "Everywhere" if source == "shared" else Script.named(source, root).title
+    return {"speaker": speaker, "dialogue": source, "title": title, "profile": doc, "prompt": prompt.strip()}
 
 
 def create(

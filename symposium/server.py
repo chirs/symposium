@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from symposium import director, sandbox
+from symposium import director, guests, sandbox
 from symposium import generate as gen
 from symposium.dialogue import Dialogue
 from symposium.script import DIALOGUES, ROOT, Script
@@ -33,6 +33,12 @@ class CastMember(BaseModel):
     dialogue: str
 
 
+class GuestBody(BaseModel):
+    speaker: str
+    dialogue: str
+    at: int | None = None
+
+
 class SandboxBody(BaseModel):
     title: str
     cast: list[CastMember]
@@ -51,21 +57,25 @@ class Room:
         if not self.path.exists():
             shutil.copy(script.dir / "seed.md", self.path)
         self.dialogue = Dialogue.load(self.path)
+        guests.attach(self.script, self.path)
 
     def save(self) -> None:
         self.dialogue.save(self.path)
 
     def reset(self) -> None:
         self.dialogue = Dialogue.parse((self.script.dir / "seed.md").read_text())
+        guests.clear(self.script, self.path)
         self.save()
 
     def state(self) -> dict:
         d = self.dialogue
         return {
             **summary(self.script),
+            "characters": [c.upper() for c in self.script.speakers],
+            "guests": [g.upper() for g in self.script.guests],
             "exchanges": [{"speaker": e.speaker, "text": e.text} for e in d.exchanges],
             "has_original": d.has_original,
-            "next_speaker": "" if self.script.sandbox else self.script.next_speaker(d).upper(),
+            "next_speaker": "" if self.script.directed else self.script.next_speaker(d).upper(),
         }
 
 
@@ -107,6 +117,13 @@ def build_app(
     @app.get("/api/characters")
     def list_characters():
         return sandbox.catalog(dialogues_dir)
+
+    @app.get("/api/characters/{source}/{speaker}")
+    def get_character(source: str, speaker: str):
+        found = sandbox.profile(speaker, source, root=dialogues_dir)
+        if found is None:
+            raise HTTPException(404, f"no character {speaker!r} in {source!r}")
+        return found
 
     @app.post("/api/sandboxes")
     def post_sandbox(body: SandboxBody):
@@ -165,6 +182,16 @@ def build_app(
         r.save()
         return r.state()
 
+    @app.post("/api/dialogues/{name}/guests")
+    def post_guest(name: str, body: GuestBody):
+        r = room(name)
+        try:
+            guests.invite(r.dialogue, r.script, r.path, body.speaker, body.dialogue, body.at)
+        except ValueError as err:
+            raise HTTPException(400, str(err)) from err
+        r.save()
+        return r.state()
+
     @app.post("/api/dialogues/{name}/revert")
     def post_revert(name: str):
         r = room(name)
@@ -172,6 +199,7 @@ def build_app(
             r.dialogue.revert()
         except ValueError as err:
             raise HTTPException(400, str(err)) from err
+        guests.clear(r.script, r.path)
         r.save()
         return r.state()
 

@@ -8,7 +8,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-from symposium import sandbox
+from symposium import guests, sandbox
 from symposium.dialogue import Dialogue, Exchange
 from symposium.director import choose_speaker
 from symposium.generate import GenerationError, generate
@@ -26,11 +26,13 @@ def render(e: Exchange) -> str:
 
 def resolve_script(path: Path, name: str | None) -> Script:
     if name:
-        return Script.named(name)
-    local = path.parent / "script.json"
-    if local.exists():
-        return Script.load(local)
-    sys.exit(f"cannot find script.json next to {path}; pass --dialogue NAME")
+        script = Script.named(name)
+    elif (path.parent / "script.json").exists():
+        script = Script.load(path.parent / "script.json")
+    else:
+        sys.exit(f"cannot find script.json next to {path}; pass --dialogue NAME")
+    guests.attach(script, path)
+    return script
 
 
 def step(dialogue: Dialogue, script: Script, speaker: str | None, out) -> Exchange:
@@ -51,6 +53,7 @@ def cmd_new(args) -> None:
     if out.exists() and not args.force:
         sys.exit(f"{out} exists; pass --force to overwrite")
     shutil.copy(seed, out)
+    guests.save(out, {})
     print(out)
 
 
@@ -89,6 +92,7 @@ def cmd_revert(args) -> None:
     except ValueError as err:
         sys.exit(str(err))
     d.save(path)
+    guests.save(path, {})
     print(f"restored original ({len(d.exchanges)} exchanges)")
 
 
@@ -124,6 +128,7 @@ def cmd_run(args) -> None:
                 print(err)
                 continue
             d.save(path)
+            guests.clear(script, path)
             cursor = min(cursor, len(d.exchanges))
             print("returned to the original path\n")
         elif line:
@@ -142,6 +147,21 @@ def cmd_run(args) -> None:
                 continue
             d.save(path)
             cursor = len(d.exchanges)
+
+
+def cmd_invite(args) -> None:
+    path = Path(args.file)
+    if "@" not in args.who:
+        sys.exit("say who as speaker@dialogue, e.g. jesus@shared or callicles@gorgias")
+    speaker, source = args.who.split("@", 1)
+    d = Dialogue.load(path)
+    script = resolve_script(path, args.dialogue)
+    try:
+        e = guests.invite(d, script, path, speaker, source, args.at)
+    except ValueError as err:
+        sys.exit(str(err))
+    d.save(path)
+    print(render(e))
 
 
 def cmd_characters(args) -> None:
@@ -208,6 +228,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("file")
     s.add_argument("--dialogue")
     s.set_defaults(func=cmd_run)
+
+    s = sub.add_parser("invite", help="bring a character from another text into this run")
+    s.add_argument("file")
+    s.add_argument("who", help="speaker@dialogue, e.g. jesus@shared or callicles@gorgias")
+    s.add_argument("--at", type=int, help="after this many exchanges (default: end); the rest is discarded")
+    s.add_argument("--dialogue")
+    s.set_defaults(func=cmd_invite)
 
     s = sub.add_parser("characters", help="list every character and the dialogue it comes from")
     s.set_defaults(func=cmd_characters)
