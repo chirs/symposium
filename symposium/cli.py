@@ -8,7 +8,9 @@ import sys
 import textwrap
 from pathlib import Path
 
+from symposium import sandbox
 from symposium.dialogue import Dialogue, Exchange
+from symposium.director import choose_speaker
 from symposium.generate import GenerationError, generate
 from symposium.script import DIALOGUES, Script
 
@@ -32,7 +34,7 @@ def resolve_script(path: Path, name: str | None) -> Script:
 
 
 def step(dialogue: Dialogue, script: Script, speaker: str | None, out) -> Exchange:
-    speaker = speaker or script.next_speaker(dialogue)
+    speaker = speaker or choose_speaker(dialogue, script)
     print(speaker.upper(), file=out)
     text = generate(
         dialogue, speaker, script, on_text=lambda t: print(t, end="", file=out, flush=True)
@@ -142,6 +144,27 @@ def cmd_run(args) -> None:
             cursor = len(d.exchanges)
 
 
+def cmd_characters(args) -> None:
+    for row in sandbox.catalog():
+        print(f"{row['speaker']}@{row['dialogue']:<12} {row['title']}")
+
+
+def cmd_sandbox(args) -> None:
+    cast = []
+    for item in args.cast.split(","):
+        if "@" not in item:
+            sys.exit(f"cast entries look like speaker@dialogue, not {item!r}")
+        speaker, source = item.strip().split("@", 1)
+        cast.append((speaker, source))
+    try:
+        script = sandbox.create(args.title, cast, args.setting, args.scene, args.opening or "")
+    except ValueError as err:
+        sys.exit(str(err))
+    run = script.dir / "run.md"
+    shutil.copy(script.dir / "seed.md", run)
+    print(run)
+
+
 def cmd_serve(args) -> None:
     import uvicorn
 
@@ -185,6 +208,17 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("file")
     s.add_argument("--dialogue")
     s.set_defaults(func=cmd_run)
+
+    s = sub.add_parser("characters", help="list every character and the dialogue it comes from")
+    s.set_defaults(func=cmd_characters)
+
+    s = sub.add_parser("sandbox", help="start a conversation among characters of your choosing")
+    s.add_argument("title")
+    s.add_argument("--cast", required=True, help="comma-separated speaker@dialogue, e.g. socrates@gorgias,callicles@gorgias")
+    s.add_argument("--setting", required=True, help="one line, shown under the title")
+    s.add_argument("--scene", required=True, help="a paragraph every speaker is told")
+    s.add_argument("--opening", help="a question The Stranger puts to the company first")
+    s.set_defaults(func=cmd_sandbox)
 
     s = sub.add_parser("serve", help="serve the reading view in a browser")
     s.add_argument("--host", default="127.0.0.1")

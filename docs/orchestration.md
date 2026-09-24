@@ -81,3 +81,17 @@ POST /api/dialogues/{name}/reset
 ```
 
 and `web/index.html`, which shows a list of dialogues until one is chosen (`#name` in the URL), then the reading view with the same cursor model as the CLI.
+
+## Sandboxes
+
+A sandbox is a dialogue directory the user makes, from the landing page or `symposium sandbox`:
+
+```
+dialogues/sandbox-<slug>/
+  script.json     title, setting, scene, "sandbox": true, "cast": {"socrates": "gorgias", ...}, one phase
+  seed.md         [<setting>. Present: A, B, C.] and, if given, THE STRANGER: <opening question>
+```
+
+`cast` maps each speaker to the dialogue whose prompt to borrow, so `Script.prompt_path` reaches into `dialogues/<source>/prompts/`. Every speaker's scene is prefixed with a note that this is a new conversation, not the scene of any text, and that they keep their convictions and manner.
+
+There is no script to follow, so `symposium/director.py` decides who speaks next: one small call (`SYMPOSIUM_DIRECTOR_MODEL`, default `claude-haiku-4-5`) with `prompts/director.md` and the last eight exchanges, answering with a name. The rules: whoever was addressed or challenged; otherwise whoever has most reason to answer; not the last speaker unless no one else has anything to say; never The Stranger. An unparseable reply or an API error falls back to round-robin over the cast. With nothing said yet, the first cast member opens. A tap on a name in the guest strip, or `--speaker` on the command line, overrides the director. Sandboxes are gitignored and can be removed from the landing page (`DELETE /api/dialogues/{name}`; refused for the fixed dialogues).

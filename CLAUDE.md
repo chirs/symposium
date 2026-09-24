@@ -20,6 +20,7 @@ Five dialogues so far: Republic I, Euthyphro, Crito, Gorgias, Symposium, each co
 - System prompt per call: `prompts/orchestration.md`, then the `# System Prompt` section of `dialogues/<name>/prompts/<speaker>.md`, then the script's `scene` paragraph. The transcript goes as one content block per exchange with a cache breakpoint on the last one.
 - Turn order is scripted per dialogue in `script.json` phases, not model-driven. The Stranger's lines never consume a turn. Symposium uses one phase per encomium.
 - Branching: an interjection discards everything after it. The first divergence snapshots the file to `<file>.original.md`; revert restores it. Start over copies the seed back.
+- Sandboxes (`dialogues/sandbox-*/`, gitignored, made from the page or `symposium sandbox`) borrow prompts through a `cast` map in their script and have no turn order: `symposium/director.py` asks `SYMPOSIUM_DIRECTOR_MODEL` (default `claude-haiku-4-5`) who speaks next, with round-robin as the fallback. Their scene is prefixed with a note that this is a new conversation, not the scene of any text.
 
 Full spec: `docs/orchestration.md`.
 
@@ -29,10 +30,12 @@ Full spec: `docs/orchestration.md`.
 symposium/dialogue.py   exchange parsing/formatting, Dialogue with interject/revert, file + sidecar I/O
 symposium/script.py     Script (title, setting, scene, phases, dir), next_speaker, discover()
 symposium/generate.py   system prompt assembly, request params, streaming call
-symposium/cli.py        new / show / next / interject / revert / run / serve
-symposium/server.py     build_app(dialogues_dir, generate): /api/dialogues[/{name}[/next|interject|revert|reset]]
+symposium/sandbox.py    catalog of characters, create/remove sandbox directories
+symposium/director.py   choose_speaker: script order, or a small model call for sandboxes
+symposium/cli.py        new / show / next / interject / revert / run / characters / sandbox / serve
+symposium/server.py     build_app(dialogues_dir, generate, choose): /api/dialogues[/{name}[/next|interject|revert|reset]], /api/characters, /api/sandboxes
 web/index.html          landing list + reading view, vanilla JS
-prompts/orchestration.md  rules shared by every character
+prompts/orchestration.md  rules shared by every character; prompts/director.md picks the next speaker
 dialogues/<name>/       script.json, seed.md (full text), prompts/<speaker>.md; run*.md is gitignored
 tools/                  one-off converters from corpus/ text to script form (tagged texts, Republic I, Symposium)
 corpus/                 25 Jowett dialogues, plain text

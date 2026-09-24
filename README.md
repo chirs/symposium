@@ -39,6 +39,22 @@ Each lives in `dialogues/<name>/` as `script.json` (title, setting, scene, turn 
 
 You read Plato's text; generation happens only where you leave it: after an interjection as The Stranger, or past the end. `tools/` holds the scripts that made the seeds from the corpus.
 
+## A conversation of your own
+
+The landing page ends with a form: pick any characters from any dialogue (Socrates comes in five versions, one per dialogue), give the company a setting, a scene paragraph, and optionally an opening question that The Stranger puts to them, and begin. A small model call decides who speaks next after each exchange, since there is no script; clicking a name in the guest strip makes that character answer instead. Sandboxes live in `dialogues/sandbox-<slug>/` (gitignored), work exactly like the fixed dialogues, and can be removed from the landing page.
+
+From the terminal:
+
+```
+.venv/bin/symposium characters
+.venv/bin/symposium sandbox "Power and Justice" \
+    --cast socrates@gorgias,callicles@gorgias,thrasymachus@republic-1 \
+    --setting "A wine shop in the Piraeus, late" \
+    --scene "They have been drinking since sundown and the question of whether the strong man is the happy man will not drop." \
+    --opening "Is the man who takes what he wants happier than the man who takes what is his?"
+.venv/bin/symposium run dialogues/sandbox-power-and-justice/run.md
+```
+
 ## Commands
 
 | Command | What it does |
@@ -50,10 +66,12 @@ You read Plato's text; generation happens only where you leave it: after an inte
 | `symposium interject FILE "text" [--at N]` | speak as The Stranger after exchange N; discard the rest |
 | `symposium revert FILE` | return to the pre-interjection path |
 | `symposium run FILE` | interactive: Enter steps or generates, typed text interjects |
+| `symposium characters` | every character and the dialogue it comes from |
+| `symposium sandbox TITLE --cast ... --setting ... --scene ... [--opening ...]` | start a conversation of your own |
 
 The web view and the CLI work on the same files: `dialogues/<name>/run.md`, created from the seed on first use.
 
-Environment: `ANTHROPIC_API_KEY`; `SYMPOSIUM_MODEL` (default `claude-opus-5`); `SYMPOSIUM_EFFORT` (`low` to `max`, optional).
+Environment: `ANTHROPIC_API_KEY`; `SYMPOSIUM_MODEL` (default `claude-opus-5`); `SYMPOSIUM_EFFORT` (`low` to `max`, optional); `SYMPOSIUM_DIRECTOR_MODEL` (default `claude-haiku-4-5`, the small call that picks the next speaker in a sandbox).
 
 How generation, turn order, and branching work: [docs/orchestration.md](docs/orchestration.md).
 
